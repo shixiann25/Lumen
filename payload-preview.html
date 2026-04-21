@@ -1,0 +1,157 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Example Payload</title>
+<style>
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    background: #f5f5f5;
+    padding: 40px;
+  }
+  h2 {
+    font-size: 20px;
+    font-weight: 600;
+    margin-bottom: 12px;
+    color: #111;
+  }
+  .payload-block {
+    background: #fff;
+    border: 1px solid #e0e0e0;
+    border-radius: 8px;
+    padding: 20px 24px;
+    margin-bottom: 32px;
+    overflow-x: auto;
+  }
+  .label {
+    display: inline-block;
+    font-size: 12px;
+    color: #888;
+    margin-bottom: 10px;
+  }
+  pre {
+    margin: 0;
+    font-family: 'Menlo', 'Monaco', 'Courier New', monospace;
+    font-size: 13px;
+    line-height: 1.6;
+    white-space: pre-wrap;
+    word-break: break-all;
+  }
+  .key    { color: #d73a49; }
+  .str    { color: #22863a; }
+  .num    { color: #005cc5; }
+  .bool   { color: #e36209; }
+  .null   { color: #6f42c1; }
+  .punct  { color: #444; }
+</style>
+</head>
+<body>
+
+<h2>Example Payload</h2>
+
+<div class="payload-block">
+  <span class="label">Axon</span>
+  <pre id="axon"></pre>
+</div>
+
+<div class="payload-block">
+  <span class="label">Google</span>
+  <pre id="google"></pre>
+</div>
+
+<script>
+const axon = {
+  "name": "purchase",
+  "dedupe_id": "7516670263368",
+  "event_time": 1774495906000,
+  "event_source_url": "https://www.wokmagic.com/pages/weekly-deals?utm_source=facebook&utm_medium=cpc&utm_campaign=120235740963720741&utm_content=120238648176890741&utm_term=120238648015320741&fbadid=120238648176890741&utm_placement=Facebook_Mobile_Feed&wm_source=facebook&wm_medium=ads&wm_ad_id=120238648176890741&tw_source=fb&tw_adid=120238648176890741&fbclid=IwZXh0bgNhZW0BMABhZGlkAassad08_-VzcnRjBmFwcF9pZAo2NjI4NTY4Mzc5AAEe9ENAuQuXRftbeFk4NbNj2RbpNTXNd0IoL2QRXxce7eshpiYYXDp6HwsnOjE_aem_cwxexWgTsemIAYb8kQ20uw&utm_id=120235740963720741_v2_s04_e115",
+  "user_data": {
+    "aleid": "",
+    "client_id": "e8d4152a-cc09-4c62-b3dd-2856b4ff6401",
+    "axwrt": "e8d4152a-cc09-4c62-b3dd-2856b4ff6401",
+    "alart": "",
+    "client_ip_address": "2601:602:c700:7e20:f1af:fef4:a6b4:c09f",
+    "client_user_agent": "",
+    "esi": "web",
+    "sid": "67451cc4-c5fa-442a-afef-7203e7117974"
+  },
+  "measurement_partner_data": {
+    "is_claimable": false,
+    "attribution_model": "ANY_CLICK",
+    "attribution_lookback_window_hours": 672,
+    "attribution_share": 0,
+    "accounting_mode": "CASH",
+    "campaign_id": "",
+    "creative_set_id": "",
+    "is_new_customer": true,
+    "last_purchase_ts": null
+  },
+  "page_data": {
+    "document": {
+      "referrer": "http://m.facebook.com/"
+    }
+  },
+  "data": {
+    "currency": "USD",
+    "value": 89.19,
+    "transaction_id": "7516670263368",
+    "shipping": 4.99,
+    "tax": 7.13
+  }
+};
+
+const google = {
+  "conversionAction": "customers/5477387606/conversionActions/7260644352",
+  "conversionDateTime": "2026-02-18 06:10:27+00:00",
+  "conversionValue": 82.1,
+  "currencyCode": "USD",
+  "orderId": "6479099986085",
+  "userIdentifiers": [
+    {
+      "hashedEmail": "f09b02419ef48431d9c6014c427c459f612dcbb725ef1d57d087534419d4031c"
+    },
+    {
+      "hashedPhoneNumber": "61c7c27f13647c890aac0a9c309e5ad101f1b885f8fa9f285cb3cec328e4f4a6"
+    },
+    {
+      "addressInfo": {
+        "hashedFirstName": "93c6b09e0fc292a99a2d60d862f484b66c8709f78fd3a30ceaec6422a2197824",
+        "hashedLastName": "3af151bfb82bfe370c9b5e68d5af76473097db3f00f0efe0d25c39d22008c2f7",
+        "hashedStreetAddress": "34ba688a0d11afcf1fb971b8e9b7b689a646a780cfe9fefa8a4318dc4bdd3557",
+        "city": "Sewell",
+        "state": "New Jersey",
+        "postalCode": "08080",
+        "countryCode": "US"
+      }
+    }
+  ]
+};
+
+function highlight(obj) {
+  const json = JSON.stringify(obj, null, 2);
+  return json.replace(
+    /("(\\u[a-zA-Z0-9]{4}|\\[^u]|[^\\"])*"(\s*:)?|\b(true|false|null)\b|-?\d+(?:\.\d*)?(?:[eE][+\-]?\d+)?|[{}\[\],:])/g,
+    match => {
+      if (/^"/.test(match)) {
+        if (/:$/.test(match)) {
+          return `<span class="key">${escHtml(match)}</span>`;
+        }
+        return `<span class="str">${escHtml(match)}</span>`;
+      }
+      if (/true|false/.test(match)) return `<span class="bool">${match}</span>`;
+      if (/null/.test(match))       return `<span class="null">${match}</span>`;
+      if (/[{}\[\],:]/.test(match)) return `<span class="punct">${match}</span>`;
+      return `<span class="num">${match}</span>`;
+    }
+  );
+}
+
+function escHtml(s) {
+  return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+}
+
+document.getElementById('axon').innerHTML   = highlight(axon);
+document.getElementById('google').innerHTML = highlight(google);
+</script>
+</body>
+</html>
