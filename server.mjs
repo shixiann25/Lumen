@@ -10,6 +10,10 @@ import fs from 'fs'
 const __dirname = dirname(fileURLToPath(import.meta.url))
 const isProd = process.env.NODE_ENV === 'production'
 
+console.log('[startup] NODE_ENV:', process.env.NODE_ENV)
+console.log('[startup] ANTHROPIC_API_KEY exists:', !!process.env.ANTHROPIC_API_KEY)
+console.log('[startup] ANTHROPIC_API_KEY prefix:', process.env.ANTHROPIC_API_KEY?.slice(0, 12))
+
 const app = express()
 app.use(cors())
 app.use(express.json({ limit: '50mb' }))
