@@ -381,7 +381,7 @@ app.get('/api/health', (_, res) => res.json({ ok: true }))
 // SPA fallback — must be after all API routes
 if (isProd) {
   const indexPath = join(__dirname, 'dist', 'index.html')
-  app.get('*', (_, res) => {
+  app.get('/{*path}', (_, res) => {
     if (fs.existsSync(indexPath)) res.sendFile(indexPath)
     else res.status(404).send('Not found')
   })
