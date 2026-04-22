@@ -83,11 +83,41 @@ function generateExif(category) {
 
 // --- Gallery endpoint (Unsplash) ---
 const UNSPLASH_QUERIES = {
-  featured: 'fine art photography editorial',
-  portrait: 'portrait face people photography',
-  landscape: 'landscape nature mountain photography',
-  street: 'street photography city people',
-  still: 'still life coffee food minimal photography',
+  featured: [
+    'fine art portrait photography',
+    'editorial fashion photography',
+    'cinematic photography film',
+    'documentary photography award',
+    'landscape golden hour photography',
+  ],
+  portrait: [
+    'natural light portrait outdoor',
+    'candid portrait color film',
+    'environmental portrait lifestyle',
+    'golden hour portrait warm',
+    'indoor window light portrait',
+  ],
+  landscape: [
+    'landscape golden hour nature',
+    'mountain fog misty landscape',
+    'ocean sunset seascape',
+    'forest light rays nature',
+    'desert minimal landscape wide',
+  ],
+  street: [
+    'street photography candid urban',
+    'black white street documentary',
+    'rain street city night',
+    'market people street color',
+    'alley urban architecture street',
+  ],
+  still: [
+    'still life coffee minimal',
+    'food photography natural light',
+    'flower macro close up',
+    'product minimal clean photography',
+    'vintage objects still life',
+  ],
 }
 
 const UNSPLASH_ORIENTATION = {
@@ -106,12 +136,14 @@ app.get('/api/gallery', async (req, res) => {
     return res.status(503).json({ error: 'UNSPLASH_ACCESS_KEY_MISSING' })
   }
 
-  const query = UNSPLASH_QUERIES[category] || UNSPLASH_QUERIES.portrait
+  const queries = UNSPLASH_QUERIES[category] || UNSPLASH_QUERIES.portrait
+  const queryIndex = (Number(page) - 1) % queries.length
+  const query = queries[queryIndex]
   const orientation = UNSPLASH_ORIENTATION[category] || 'squarish'
 
   try {
     const response = await fetch(
-      `https://api.unsplash.com/search/photos?query=${encodeURIComponent(query)}&per_page=20&page=${page}&orientation=${orientation}&content_filter=high`,
+      `https://api.unsplash.com/search/photos?query=${encodeURIComponent(query)}&per_page=12&page=1&orientation=${orientation}&content_filter=high&order_by=relevant`,
       { headers: { Authorization: `Client-ID ${accessKey}` } }
     )
 
