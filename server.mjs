@@ -11,9 +11,12 @@ const __dirname = dirname(fileURLToPath(import.meta.url))
 const isProd = process.env.NODE_ENV === 'production'
 
 console.log('[startup] NODE_ENV:', process.env.NODE_ENV)
+console.log('[startup] PORT:', process.env.PORT)
+console.log('[startup] RAILWAY_ENVIRONMENT:', process.env.RAILWAY_ENVIRONMENT)
+console.log('[startup] RAILWAY_SERVICE_NAME:', process.env.RAILWAY_SERVICE_NAME)
 console.log('[startup] ANTHROPIC_API_KEY exists:', !!process.env.ANTHROPIC_API_KEY)
-console.log('[startup] UNSPLASH_ACCESS_KEY exists:', !!process.env.UNSPLASH_ACCESS_KEY)
 console.log('[startup] TEST_VAR:', process.env.TEST_VAR)
+console.log('[startup] total env vars:', Object.keys(process.env).length)
 
 const app = express()
 app.use(cors())
