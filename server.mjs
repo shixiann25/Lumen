@@ -83,19 +83,13 @@ function generateExif(category) {
 
 // --- Gallery endpoint (Unsplash) ---
 const UNSPLASH_QUERIES = {
-  featured: [
-    'golden hour portrait outdoor natural light',
-    'landscape travel photography scenic',
-    'street candid documentary people',
-    'still life food coffee natural',
-    'architecture urban minimal photography',
-  ],
   portrait: [
-    'natural light portrait smiling outdoor',
-    'golden hour portrait backlit warm',
-    'indoor window light portrait soft',
-    'lifestyle portrait real people candid',
-    'travel portrait culture documentary',
+    'portrait woman natural light outdoor smiling',
+    'portrait man candid street documentary',
+    'elderly person portrait face wisdom',
+    'child kid portrait playful natural light',
+    'young woman golden hour backlit warm',
+    'man portrait urban street candid',
   ],
   landscape: [
     'landscape golden hour sunrise mountain',
@@ -121,11 +115,33 @@ const UNSPLASH_QUERIES = {
 }
 
 const UNSPLASH_ORIENTATION = {
-  featured: 'squarish',
   portrait: 'portrait',
   landscape: 'landscape',
   street: 'squarish',
   still: 'squarish',
+}
+
+function mapPhoto(photo, category) {
+  return {
+    id: photo.id,
+    thumb: photo.urls.small,
+    full: photo.urls.regular,
+    title: photo.alt_description || photo.description || '摄影作品',
+    photographer: photo.user.name,
+    photographerLink: `${photo.user.links.html}?utm_source=lumen&utm_medium=referral`,
+    color: photo.color,
+    category,
+    tags: CATEGORY_TAGS[category] || [],
+    exif: generateExif(category),
+  }
+}
+
+async function fetchUnsplashPhotos(query, orientation, perPage, accessKey) {
+  const url = `https://api.unsplash.com/search/photos?query=${encodeURIComponent(query)}&per_page=${perPage}&page=1&orientation=${orientation}&content_filter=high&order_by=relevant`
+  const response = await fetch(url, { headers: { Authorization: `Client-ID ${accessKey}` } })
+  if (!response.ok) throw new Error(`Unsplash error ${response.status}`)
+  const data = await response.json()
+  return data.results
 }
 
 app.get('/api/gallery', async (req, res) => {
@@ -136,40 +152,31 @@ app.get('/api/gallery', async (req, res) => {
     return res.status(503).json({ error: 'UNSPLASH_ACCESS_KEY_MISSING' })
   }
 
-  const queries = UNSPLASH_QUERIES[category] || UNSPLASH_QUERIES.portrait
-  const queryIndex = (Number(page) - 1) % queries.length
-  const query = queries[queryIndex]
-  const orientation = UNSPLASH_ORIENTATION[category] || 'squarish'
-
   try {
-    const response = await fetch(
-      `https://api.unsplash.com/search/photos?query=${encodeURIComponent(query)}&per_page=12&page=1&orientation=${orientation}&content_filter=high&order_by=relevant`,
-      { headers: { Authorization: `Client-ID ${accessKey}` } }
-    )
-
-    if (!response.ok) {
-      if (response.status === 401 || response.status === 403) {
-        return res.status(503).json({ error: 'UNSPLASH_ACCESS_KEY_MISSING' })
-      }
-      const err = await response.json().catch(() => ({}))
-      throw new Error(err.errors?.[0] || `Unsplash API error ${response.status}`)
+    // Featured: fetch 3 photos from each of the 4 categories, shuffle and return 12
+    if (category === 'featured') {
+      const cats = ['portrait', 'landscape', 'street', 'still']
+      const results = await Promise.all(cats.map(async (cat) => {
+        const catQueries = UNSPLASH_QUERIES[cat]
+        const query = catQueries[Math.floor(Math.random() * catQueries.length)]
+        const orientation = UNSPLASH_ORIENTATION[cat] || 'squarish'
+        const photos = await fetchUnsplashPhotos(query, orientation, 5, accessKey)
+        return photos.slice(0, 3).map(p => mapPhoto(p, cat))
+      }))
+      const photos = results.flat().sort(() => Math.random() - 0.5)
+      return res.json({ photos, total: photos.length, totalPages: 1, page: 1 })
     }
 
-    const data = await response.json()
-    const photos = data.results.map((photo) => ({
-      id: photo.id,
-      thumb: photo.urls.small,
-      full: photo.urls.regular,
-      title: photo.alt_description || photo.description || '摄影作品',
-      photographer: photo.user.name,
-      photographerLink: `${photo.user.links.html}?utm_source=lumen&utm_medium=referral`,
-      color: photo.color,
-      category,
-      tags: CATEGORY_TAGS[category] || [],
-      exif: generateExif(category),
-    }))
+    // Other categories: rotate through queries per page
+    const queries = UNSPLASH_QUERIES[category] || UNSPLASH_QUERIES.portrait
+    const queryIndex = (Number(page) - 1) % queries.length
+    const query = queries[queryIndex]
+    const orientation = UNSPLASH_ORIENTATION[category] || 'squarish'
 
-    res.json({ photos, total: data.total, totalPages: data.total_pages, page: Number(page) })
+    const results = await fetchUnsplashPhotos(query, orientation, 12, accessKey)
+    const photos = results.map(p => mapPhoto(p, category))
+
+    res.json({ photos, total: photos.length * queries.length, totalPages: queries.length, page: Number(page) })
   } catch (err) {
     console.error('Unsplash error:', err)
     res.status(500).json({ error: err.message })
