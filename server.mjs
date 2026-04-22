@@ -12,7 +12,8 @@ const isProd = process.env.NODE_ENV === 'production'
 
 console.log('[startup] NODE_ENV:', process.env.NODE_ENV)
 console.log('[startup] ANTHROPIC_API_KEY exists:', !!process.env.ANTHROPIC_API_KEY)
-console.log('[startup] ANTHROPIC_API_KEY prefix:', process.env.ANTHROPIC_API_KEY?.slice(0, 12))
+console.log('[startup] UNSPLASH_ACCESS_KEY exists:', !!process.env.UNSPLASH_ACCESS_KEY)
+console.log('[startup] TEST_VAR:', process.env.TEST_VAR)
 
 const app = express()
 app.use(cors())
