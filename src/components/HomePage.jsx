@@ -1,6 +1,8 @@
 import { galleryItems } from '../data/gallery'
+import { useLang } from '../contexts/LangContext'
 
 export default function HomePage({ setPage }) {
+  const { t, lang } = useLang()
 
   return (
     <div>
@@ -20,29 +22,29 @@ export default function HomePage({ setPage }) {
           <div className="max-w-2xl">
             <div className="flex items-center gap-3 mb-10">
               <div className="h-px w-8 bg-[#B8965A]" />
-              <span className="text-[#B8965A] text-xs tracking-[0.25em] uppercase font-light">摄影入门学习助手</span>
+              <span className="text-[#B8965A] text-xs tracking-[0.25em] uppercase font-light">{t('home.eyebrow')}</span>
             </div>
             <h1 className="font-display text-5xl md:text-7xl font-semibold leading-[1.05] mb-8 text-white">
-              看懂<br />
-              <em className="italic text-[#B8965A] not-italic font-semibold">每一张</em><br />
-              照片
+              {t('home.hero.line1')}<br />
+              <em className="italic text-[#B8965A] not-italic font-semibold">{t('home.hero.line2')}</em><br />
+              {t('home.hero.line3')}
             </h1>
             <p className="text-white/60 text-lg leading-relaxed mb-12 max-w-md font-light">
-              上传相机照片，AI 结合 EXIF 参数帮你理解光圈、快门、ISO 的关系，给出专属学习建议。
+              {t('home.hero.desc')}
             </p>
             <div className="flex flex-col sm:flex-row gap-4">
               <button
                 onClick={() => setPage('upload')}
                 className="group inline-flex items-center gap-3 bg-[#B8965A] text-white px-8 py-4 rounded-full text-sm font-medium hover:bg-[#A07848] transition-colors"
               >
-                <span>上传我的照片</span>
+                <span>{t('home.cta.upload')}</span>
                 <span className="text-white/60 group-hover:translate-x-1 transition-transform">→</span>
               </button>
               <button
                 onClick={() => setPage('gallery')}
                 className="inline-flex items-center gap-3 border border-white/20 text-white/80 px-8 py-4 rounded-full text-sm font-medium hover:border-white/40 hover:text-white transition-colors"
               >
-                浏览参考图库
+                {t('home.cta.gallery')}
               </button>
             </div>
           </div>
@@ -59,15 +61,15 @@ export default function HomePage({ setPage }) {
       <section className="max-w-6xl mx-auto px-6 py-24">
         <div className="flex items-end justify-between mb-14">
           <div>
-            <p className="text-[#B8965A] text-xs tracking-[0.2em] uppercase mb-3">How it works</p>
-            <h2 className="font-display text-3xl font-semibold text-[#1A1714]">三步看懂一张照片</h2>
+            <p className="text-[#B8965A] text-xs tracking-[0.2em] uppercase mb-3">{t('home.how.eyebrow')}</p>
+            <h2 className="font-display text-3xl font-semibold text-[#1A1714]">{t('home.how.title')}</h2>
           </div>
         </div>
         <div className="grid grid-cols-1 md:grid-cols-3 gap-px bg-[#E5DED5]">
           {[
-            { num: '01', title: '上传照片', desc: '拖拽或选择一张相机拍的照片，支持 JPG / HEIC / RAW 预览，自动读取 EXIF 原始参数。' },
-            { num: '02', title: 'AI 自动解读', desc: '结合 EXIF 数据与画面内容，Claude AI 分析光线、参数选择、构图意图。' },
-            { num: '03', title: '学习并改进', desc: '获得手动模式建议、用光分析、镜头推荐，像摄影师朋友在帮你看片。' },
+            { num: t('home.how.step1.num'), title: t('home.how.step1.title'), desc: t('home.how.step1.desc') },
+            { num: t('home.how.step2.num'), title: t('home.how.step2.title'), desc: t('home.how.step2.desc') },
+            { num: t('home.how.step3.num'), title: t('home.how.step3.title'), desc: t('home.how.step3.desc') },
           ].map(({ num, title, desc }) => (
             <div key={num} className="bg-[#F8F6F2] p-8 md:p-10">
               <div className="font-display text-4xl font-semibold text-[#E5DED5] mb-6">{num}</div>
@@ -83,14 +85,14 @@ export default function HomePage({ setPage }) {
         <div className="max-w-6xl mx-auto px-6">
           <div className="flex items-end justify-between mb-10">
             <div>
-              <p className="text-[#B8965A] text-xs tracking-[0.2em] uppercase mb-3">Reference</p>
-              <h2 className="font-display text-3xl font-semibold text-white">精选参考图库</h2>
+              <p className="text-[#B8965A] text-xs tracking-[0.2em] uppercase mb-3">{t('home.gallery.eyebrow')}</p>
+              <h2 className="font-display text-3xl font-semibold text-white">{t('home.gallery.title')}</h2>
             </div>
             <button
               onClick={() => setPage('gallery')}
               className="text-white/40 hover:text-white text-sm transition-colors"
             >
-              全部 →
+              {t('home.gallery.all')}
             </button>
           </div>
           <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
@@ -120,22 +122,22 @@ export default function HomePage({ setPage }) {
       <section className="max-w-6xl mx-auto px-6 py-24">
         <div className="flex items-end justify-between mb-10">
           <div>
-            <p className="text-[#B8965A] text-xs tracking-[0.2em] uppercase mb-3">Basics</p>
-            <h2 className="font-display text-3xl font-semibold text-[#1A1714]">摄影参数速记</h2>
+            <p className="text-[#B8965A] text-xs tracking-[0.2em] uppercase mb-3">{t('home.params.eyebrow')}</p>
+            <h2 className="font-display text-3xl font-semibold text-[#1A1714]">{t('home.params.title')}</h2>
           </div>
           <button
             onClick={() => setPage('learn')}
             className="text-[#A89C91] hover:text-[#B8965A] text-sm transition-colors"
           >
-            更多知识 →
+            {t('home.params.more')}
           </button>
         </div>
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
           {[
-            { param: '光圈', en: 'Aperture', icon: '◉', tip: 'f 值越小，背景越模糊', bg: '#FBF4E8' },
-            { param: '快门', en: 'Shutter', icon: '◷', tip: '越快凝固运动，越慢有拖影', bg: '#EBF3FA' },
-            { param: 'ISO', en: 'Sensitivity', icon: '◑', tip: '越高越亮，但噪点越多', bg: '#F0EBFA' },
-            { param: '焦段', en: 'Focal Length', icon: '◎', tip: '35mm 人眼视角，85mm 适合人像', bg: '#EAFAF0' },
+            { param: t('home.params.aperture'), en: t('home.params.aperture.sub'), icon: '◉', tip: t('home.params.aperture.tip'), bg: '#FBF4E8' },
+            { param: t('home.params.shutter'), en: t('home.params.shutter.sub'), icon: '◷', tip: t('home.params.shutter.tip'), bg: '#EBF3FA' },
+            { param: t('home.params.iso'), en: t('home.params.iso.sub'), icon: '◑', tip: t('home.params.iso.tip'), bg: '#F0EBFA' },
+            { param: t('home.params.focal'), en: t('home.params.focal.sub'), icon: '◎', tip: t('home.params.focal.tip'), bg: '#EAFAF0' },
           ].map(({ param, en, icon, tip, bg }) => (
             <div key={param} className="rounded-2xl p-5" style={{ backgroundColor: bg }}>
               <div className="flex items-center gap-2 mb-3">
@@ -156,8 +158,8 @@ export default function HomePage({ setPage }) {
           className="mt-5 w-full group border border-[#E5DED5] hover:border-[#B8965A] rounded-2xl p-6 flex items-center justify-between transition-colors bg-white"
         >
           <div className="text-left">
-            <p className="font-display font-semibold text-[#1A1714] mb-1">深入学习摄影知识</p>
-            <p className="text-[#6B6158] text-sm">曝光三角原理 · 6 种拍摄场景参数 · 顺逆侧光用法</p>
+            <p className="font-display font-semibold text-[#1A1714] mb-1">{t('home.params.learn.title')}</p>
+            <p className="text-[#6B6158] text-sm">{t('home.params.learn.sub')}</p>
           </div>
           <span className="text-[#B8965A] text-xl group-hover:translate-x-1 transition-transform flex-shrink-0 ml-4">→</span>
         </button>
@@ -166,19 +168,19 @@ export default function HomePage({ setPage }) {
       {/* CTA */}
       <section className="bg-[#B8965A] py-20">
         <div className="max-w-6xl mx-auto px-6 text-center">
-          <h2 className="font-display text-4xl font-semibold text-white mb-4">准备好了吗？</h2>
-          <p className="text-white/70 mb-8">上传你最近拍的一张照片，开始学习。</p>
+          <h2 className="font-display text-4xl font-semibold text-white mb-4">{t('home.bottom.title')}</h2>
+          <p className="text-white/70 mb-8">{t('home.bottom.desc')}</p>
           <button
             onClick={() => setPage('upload')}
             className="bg-white text-[#B8965A] font-semibold px-10 py-4 rounded-full hover:bg-[#F8F6F2] transition-colors"
           >
-            上传照片 →
+            {t('home.bottom.cta')}
           </button>
         </div>
       </section>
 
       <footer className="border-t border-[#E5DED5] text-center py-8 text-[#A89C91] text-xs tracking-wide">
-        追光 Lumen · 摄影入门学习助手 · 由 Claude AI 驱动
+        {t('home.footer')}
       </footer>
     </div>
   )

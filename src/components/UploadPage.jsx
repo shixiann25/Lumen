@@ -2,6 +2,7 @@ import { useState, useRef, useCallback, useEffect } from 'react'
 import * as exifr from 'exifr'
 import AnalysisResult from './AnalysisResult'
 import { makeThumbnail } from '../hooks/useHistory'
+import { useLang } from '../contexts/LangContext'
 
 const STATES = {
   IDLE: 'idle',
@@ -11,18 +12,20 @@ const STATES = {
   ERROR: 'error',
 }
 
-const FOCUS_OPTIONS = [
-  { id: 'exposure', label: '曝光参数' },
-  { id: 'light', label: '用光分析' },
-  { id: 'composition', label: '构图' },
-  { id: 'focal', label: '焦段选择' },
-  { id: 'manual', label: '手动模式' },
-  { id: 'portrait', label: '人像用光' },
-]
+// Used only for the API call (server-side, always zh labels)
+const FOCUS_LABEL_ZH = {
+  exposure: '曝光参数',
+  light: '用光分析',
+  composition: '构图',
+  focal: '焦段选择',
+  manual: '手动模式',
+  portrait: '人像用光',
+}
 
 const CONTEXT_KEY = 'lumen-user-context'
 
 export default function UploadPage({ addRecord }) {
+  const { t, lang } = useLang()
   const [state, setState] = useState(STATES.IDLE)
   const [preview, setPreview] = useState(null)
   const [imageBase64, setImageBase64] = useState(null)
@@ -36,6 +39,15 @@ export default function UploadPage({ addRecord }) {
   const [focusAreas, setFocusAreas] = useState([])
   const [focusNote, setFocusNote] = useState('')
   const inputRef = useRef()
+
+  const FOCUS_OPTIONS = [
+    { id: 'exposure', label: t('focus.exposure') },
+    { id: 'light', label: t('focus.light') },
+    { id: 'composition', label: t('focus.composition') },
+    { id: 'focal', label: t('focus.focal') },
+    { id: 'manual', label: t('focus.manual') },
+    { id: 'portrait', label: t('focus.portrait') },
+  ]
 
   // Restore saved context on mount
   useEffect(() => {
@@ -150,9 +162,9 @@ export default function UploadPage({ addRecord }) {
     <div className="max-w-2xl mx-auto px-4 sm:px-6 py-12">
       {/* Header */}
       <div className="mb-10">
-        <p className="text-[#B8965A] text-xs tracking-[0.2em] uppercase mb-3">Analyze</p>
-        <h1 className="font-display text-3xl font-semibold text-[#1A1714]">分析我的照片</h1>
-        <p className="text-[#6B6158] text-sm mt-2">上传相机拍摄的照片，AI 帮你解读参数与改进思路</p>
+        <p className="text-[#B8965A] text-xs tracking-[0.2em] uppercase mb-3">{t('upload.eyebrow')}</p>
+        <h1 className="font-display text-3xl font-semibold text-[#1A1714]">{t('upload.title')}</h1>
+        <p className="text-[#6B6158] text-sm mt-2">{t('upload.desc')}</p>
       </div>
 
       <input ref={inputRef} type="file" accept="image/*" className="hidden" onChange={onFileChange} />
@@ -166,10 +178,10 @@ export default function UploadPage({ addRecord }) {
           >
             <div className="flex items-center gap-2.5">
               <span className="text-[#B8965A]">◈</span>
-              <span className="font-medium text-[#1A1714]">告诉 AI 更多信息</span>
-              <span className="text-[#A89C91] text-xs">选填，让分析更有针对性</span>
+              <span className="font-medium text-[#1A1714]">{t('upload.context.title')}</span>
+              <span className="text-[#A89C91] text-xs">{t('upload.context.sub')}</span>
               {(device || focusAreas.length > 0 || focusNote) && (
-                <span className="bg-[#B8965A] text-white text-[10px] px-1.5 py-0.5 rounded-full leading-none">已填</span>
+                <span className="bg-[#B8965A] text-white text-[10px] px-1.5 py-0.5 rounded-full leading-none">{t('upload.context.filled')}</span>
               )}
             </div>
             <span className={`text-[#A89C91] text-xs transition-transform duration-200 ${contextOpen ? 'rotate-180' : ''}`}>▾</span>
@@ -178,18 +190,18 @@ export default function UploadPage({ addRecord }) {
             <div className="px-5 pb-5 border-t border-[#E5DED5] space-y-4 pt-4">
               {/* Device */}
               <div>
-                <label className="block text-xs font-medium text-[#6B6158] mb-2">设备型号</label>
+                <label className="block text-xs font-medium text-[#6B6158] mb-2">{t('upload.context.device.label')}</label>
                 <input
                   type="text"
                   value={device}
                   onChange={e => { setDevice(e.target.value); saveContext(e.target.value, focusAreas) }}
-                  placeholder="如：富士 X-T30 + 35mm f/2，或 iPhone 15 Pro"
+                  placeholder={t('upload.context.device.placeholder')}
                   className="w-full border border-[#E5DED5] rounded-xl px-4 py-2.5 text-sm text-[#1A1714] placeholder-[#C4BAB0] focus:outline-none focus:border-[#B8965A] transition-colors bg-white"
                 />
               </div>
               {/* Focus areas */}
               <div>
-                <label className="block text-xs font-medium text-[#6B6158] mb-2">希望重点分析</label>
+                <label className="block text-xs font-medium text-[#6B6158] mb-2">{t('upload.context.focus.label')}</label>
                 <div className="flex flex-wrap gap-2">
                   {FOCUS_OPTIONS.map(opt => (
                     <button
@@ -209,7 +221,7 @@ export default function UploadPage({ addRecord }) {
                   type="text"
                   value={focusNote}
                   onChange={e => { setFocusNote(e.target.value); saveContext(device, focusAreas, e.target.value) }}
-                  placeholder="或手动输入，如：想了解如何在室内弱光下手持拍摄"
+                  placeholder={t('upload.context.focus.placeholder')}
                   className="mt-2.5 w-full border border-[#E5DED5] rounded-xl px-4 py-2.5 text-sm text-[#1A1714] placeholder-[#C4BAB0] focus:outline-none focus:border-[#B8965A] transition-colors bg-white"
                 />
               </div>
@@ -225,6 +237,7 @@ export default function UploadPage({ addRecord }) {
           onDragOver={(e) => { e.preventDefault(); setDragging(true) }}
           onDragLeave={() => setDragging(false)}
           onClick={() => inputRef.current?.click()}
+          t={t}
         />
       )}
 
@@ -238,10 +251,10 @@ export default function UploadPage({ addRecord }) {
             </div>
             <div className="text-center">
               <p className="text-[#1A1714] font-medium text-sm">
-                {state === STATES.READING ? '读取 EXIF 参数中' : 'AI 解读画面中'}
+                {state === STATES.READING ? t('upload.reading') : t('upload.analyzing')}
               </p>
               <p className="text-[#A89C91] text-xs mt-1">
-                {state === STATES.ANALYZING ? '约 3–5 秒…' : ''}
+                {state === STATES.ANALYZING ? t('upload.analyzing.tip') : ''}
               </p>
             </div>
           </div>
@@ -258,7 +271,7 @@ export default function UploadPage({ addRecord }) {
           </div>
           {preview && <img src={preview} alt="preview" className="max-h-48 mx-auto rounded-xl object-contain opacity-50" />}
           <button onClick={reset} className="w-full py-3.5 rounded-xl bg-[#1A1714] text-white font-medium hover:bg-[#2D2520] transition-colors">
-            重新上传
+            {t('upload.retry')}
           </button>
         </div>
       )}
@@ -277,7 +290,7 @@ export default function UploadPage({ addRecord }) {
   )
 }
 
-function DropZone({ dragging, onDrop, onDragOver, onDragLeave, onClick }) {
+function DropZone({ dragging, onDrop, onDragOver, onDragLeave, onClick, t }) {
   return (
     <div
       onDrop={onDrop} onDragOver={onDragOver} onDragLeave={onDragLeave} onClick={onClick}
@@ -290,9 +303,9 @@ function DropZone({ dragging, onDrop, onDragOver, onDragLeave, onClick }) {
       <div className="flex flex-col items-center gap-4">
         <div className="w-16 h-16 rounded-full bg-[#F0EBE3] flex items-center justify-center text-2xl text-[#B8965A]">◎</div>
         <div>
-          <p className="font-semibold text-[#1A1714] mb-1">拖拽照片到这里，或点击选择</p>
-          <p className="text-[#A89C91] text-sm">JPG / PNG / HEIC / WEBP，最大 30MB</p>
-          <p className="text-[#A89C91] text-xs mt-1">相机原图含 EXIF 参数，分析效果最佳</p>
+          <p className="font-semibold text-[#1A1714] mb-1">{t('upload.drop.title')}</p>
+          <p className="text-[#A89C91] text-sm">{t('upload.drop.formats')}</p>
+          <p className="text-[#A89C91] text-xs mt-1">{t('upload.drop.tip')}</p>
         </div>
       </div>
     </div>

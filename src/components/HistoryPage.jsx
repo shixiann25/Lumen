@@ -1,7 +1,9 @@
 import { useState } from 'react'
 import AnalysisResult from './AnalysisResult'
+import { useLang } from '../contexts/LangContext'
 
 export default function HistoryPage({ history, removeRecord, clearAll }) {
+  const { t, lang } = useLang()
   const [selected, setSelected] = useState(null)
   const [confirmClear, setConfirmClear] = useState(false)
 
@@ -15,13 +17,13 @@ export default function HistoryPage({ history, removeRecord, clearAll }) {
             onClick={() => setSelected(null)}
             className="flex items-center gap-2 text-[#A89C91] hover:text-[#1A1714] text-sm transition-colors"
           >
-            ← 返回历史记录
+            {t('history.back')}
           </button>
           <button
             onClick={() => { removeRecord(record.id); setSelected(null) }}
             className="text-xs text-[#A89C91] hover:text-red-500 transition-colors"
           >
-            删除这条记录
+            {t('history.delete')}
           </button>
         </div>
         <AnalysisResult
@@ -40,25 +42,25 @@ export default function HistoryPage({ history, removeRecord, clearAll }) {
       {/* Header */}
       <div className="flex items-end justify-between mb-10">
         <div>
-          <p className="text-[#B8965A] text-xs tracking-[0.2em] uppercase mb-3">History</p>
-          <h1 className="font-display text-3xl font-semibold text-[#1A1714]">分析历史</h1>
-          <p className="text-[#6B6158] text-sm mt-2">你上传并解读过的 {history.length} 张照片</p>
+          <p className="text-[#B8965A] text-xs tracking-[0.2em] uppercase mb-3">{t('history.eyebrow')}</p>
+          <h1 className="font-display text-3xl font-semibold text-[#1A1714]">{t('history.title')}</h1>
+          <p className="text-[#6B6158] text-sm mt-2">{t('history.count', history.length)}</p>
         </div>
         {history.length > 0 && (
           confirmClear ? (
             <div className="flex items-center gap-3 text-sm">
-              <span className="text-[#6B6158]">确认清空全部？</span>
+              <span className="text-[#6B6158]">{t('history.clear.confirm')}</span>
               <button
                 onClick={() => { clearAll(); setConfirmClear(false) }}
                 className="text-red-500 font-medium hover:text-red-600 transition-colors"
               >
-                确认
+                {t('history.clear.ok')}
               </button>
               <button
                 onClick={() => setConfirmClear(false)}
                 className="text-[#A89C91] hover:text-[#6B6158] transition-colors"
               >
-                取消
+                {t('history.clear.cancel')}
               </button>
             </div>
           ) : (
@@ -66,7 +68,7 @@ export default function HistoryPage({ history, removeRecord, clearAll }) {
               onClick={() => setConfirmClear(true)}
               className="text-sm text-[#A89C91] hover:text-[#6B6158] transition-colors"
             >
-              清空记录
+              {t('history.clear')}
             </button>
           )
         )}
@@ -78,8 +80,8 @@ export default function HistoryPage({ history, removeRecord, clearAll }) {
           <div className="w-16 h-16 rounded-full bg-[#F0EBE3] flex items-center justify-center text-2xl text-[#B8965A] mx-auto mb-5">
             ◎
           </div>
-          <p className="font-display text-xl text-[#1A1714] mb-2">还没有分析记录</p>
-          <p className="text-[#A89C91] text-sm">上传一张照片，AI 解读结果会自动保存在这里</p>
+          <p className="font-display text-xl text-[#1A1714] mb-2">{t('history.empty.title')}</p>
+          <p className="text-[#A89C91] text-sm">{t('history.empty.desc')}</p>
         </div>
       )}
 
@@ -92,6 +94,8 @@ export default function HistoryPage({ history, removeRecord, clearAll }) {
               record={record}
               onClick={() => setSelected(record.id)}
               onDelete={() => removeRecord(record.id)}
+              t={t}
+              lang={lang}
             />
           ))}
         </div>
@@ -100,7 +104,7 @@ export default function HistoryPage({ history, removeRecord, clearAll }) {
   )
 }
 
-function HistoryCard({ record, onClick, onDelete }) {
+function HistoryCard({ record, onClick, onDelete, t, lang }) {
   const [hover, setHover] = useState(false)
 
   const formatDate = (ts) => {
@@ -108,10 +112,10 @@ function HistoryCard({ record, onClick, onDelete }) {
     const now = new Date()
     const diffMs = now - d
     const diffDays = Math.floor(diffMs / 86400000)
-    if (diffDays === 0) return `今天 ${d.getHours().toString().padStart(2, '0')}:${d.getMinutes().toString().padStart(2, '0')}`
-    if (diffDays === 1) return '昨天'
-    if (diffDays < 7) return `${diffDays} 天前`
-    return d.toLocaleDateString('zh-CN', { month: 'short', day: 'numeric' })
+    if (diffDays === 0) return `${t('history.today')} ${d.getHours().toString().padStart(2, '0')}:${d.getMinutes().toString().padStart(2, '0')}`
+    if (diffDays === 1) return t('history.yesterday')
+    if (diffDays < 7) return t('history.days.ago', diffDays)
+    return d.toLocaleDateString(lang === 'zh' ? 'zh-CN' : 'en-US', { month: 'short', day: 'numeric' })
   }
 
   return (
@@ -168,7 +172,7 @@ function HistoryCard({ record, onClick, onDelete }) {
             {record.exif.iso && <span>ISO {record.exif.iso}</span>}
           </div>
         ) : (
-          <p className="text-[#A89C91] text-xs">无 EXIF 参数</p>
+          <p className="text-[#A89C91] text-xs">{t('history.no.exif')}</p>
         )}
 
         {record.analysis?.improvement && (

@@ -1,7 +1,9 @@
 import { useState, useEffect, useCallback } from 'react'
-import { galleryItems, categories } from '../data/gallery'
+import { galleryItems } from '../data/gallery'
+import { useLang } from '../contexts/LangContext'
 
 export default function GalleryPage() {
+  const { t } = useLang()
   const [activeCategory, setActiveCategory] = useState('featured')
   const [photos, setPhotos] = useState([])
   const [page, setPage] = useState(1)
@@ -11,6 +13,14 @@ export default function GalleryPage() {
   const [error, setError] = useState(null)
   const [noApiKey, setNoApiKey] = useState(false)
   const [selected, setSelected] = useState(null)
+
+  const categories = [
+    { id: 'featured',  label: t('gallery.cat.featured') },
+    { id: 'portrait',  label: t('gallery.cat.portrait') },
+    { id: 'landscape', label: t('gallery.cat.landscape') },
+    { id: 'street',    label: t('gallery.cat.street') },
+    { id: 'still',     label: t('gallery.cat.still') },
+  ]
 
   const fetchPhotos = useCallback(async (category, pageNum, append = false) => {
     append ? setLoadingMore(true) : setLoading(true)
@@ -25,7 +35,7 @@ export default function GalleryPage() {
           setHasMore(false)
           return
         }
-        throw new Error(data.error || '加载失败')
+        throw new Error(data.error || t('gallery.loading'))
       }
       setNoApiKey(false)
       setPhotos(prev => append ? [...prev, ...data.photos] : data.photos)
@@ -36,7 +46,7 @@ export default function GalleryPage() {
       setLoading(false)
       setLoadingMore(false)
     }
-  }, [])
+  }, [t])
 
   useEffect(() => {
     setPage(1)
@@ -56,6 +66,7 @@ export default function GalleryPage() {
         photo={selected}
         isFeatured={activeCategory === 'featured'}
         onBack={() => setSelected(null)}
+        t={t}
       />
     )
   }
@@ -64,9 +75,9 @@ export default function GalleryPage() {
     <div className="max-w-6xl mx-auto px-6 py-12">
       {/* Header */}
       <div className="mb-10">
-        <p className="text-[#B8965A] text-xs tracking-[0.2em] uppercase mb-3">Reference</p>
-        <h1 className="font-display text-3xl font-semibold text-[#1A1714]">精选参考图库</h1>
-        <p className="text-[#6B6158] text-sm mt-2">每张照片附带拍摄参数，点击可用 AI 深度解读</p>
+        <p className="text-[#B8965A] text-xs tracking-[0.2em] uppercase mb-3">{t('gallery.eyebrow')}</p>
+        <h1 className="font-display text-3xl font-semibold text-[#1A1714]">{t('gallery.title')}</h1>
+        <p className="text-[#6B6158] text-sm mt-2">{t('gallery.desc')}</p>
       </div>
 
       {/* Category tabs */}
@@ -89,14 +100,14 @@ export default function GalleryPage() {
       {/* No API key notice */}
       {noApiKey && activeCategory !== 'featured' && (
         <div className="bg-[#FBF4E8] border border-[#E5DED5] rounded-xl p-4 text-sm text-[#6B6158] mb-8">
-          <span className="text-[#B8965A] font-semibold">提示：</span>未配置 Unsplash API Key，显示的是内置图片。在 <code className="bg-[#F0EBE3] px-1.5 py-0.5 rounded text-xs">.env</code> 文件中添加 <code className="bg-[#F0EBE3] px-1.5 py-0.5 rounded text-xs">UNSPLASH_ACCESS_KEY</code> 可开启动态图库。
+          <span className="text-[#B8965A] font-semibold">{t('gallery.no.key')}</span>{' '}
           <a
             href="https://unsplash.com/developers"
             target="_blank"
             rel="noopener noreferrer"
             className="ml-1 text-[#B8965A] underline underline-offset-2"
           >
-            免费申请 →
+            {t('gallery.no.key.link')}
           </a>
         </div>
       )}
@@ -127,7 +138,7 @@ export default function GalleryPage() {
       {!loading && photos.length > 0 && (
         <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
           {photos.map((photo) => (
-            <PhotoCard key={photo.id} photo={photo} onClick={() => setSelected(photo)} />
+            <PhotoCard key={photo.id} photo={photo} onClick={() => setSelected(photo)} t={t} />
           ))}
         </div>
       )}
@@ -158,10 +169,10 @@ export default function GalleryPage() {
             {loadingMore ? (
               <span className="flex items-center gap-2">
                 <span className="w-3.5 h-3.5 border-2 border-[#E5DED5] border-t-[#B8965A] rounded-full animate-spin" />
-                加载中…
+                {t('gallery.loading')}
               </span>
             ) : (
-              '加载更多'
+              t('gallery.load.more')
             )}
           </button>
         </div>
@@ -170,7 +181,7 @@ export default function GalleryPage() {
       {/* Unsplash credit */}
       {activeCategory !== 'featured' && !noApiKey && photos.length > 0 && (
         <p className="text-center text-[#A89C91] text-xs mt-10">
-          图片来自{' '}
+          {t('gallery.credit')}{' '}
           <a
             href="https://unsplash.com/?utm_source=lumen&utm_medium=referral"
             target="_blank"
@@ -185,7 +196,7 @@ export default function GalleryPage() {
   )
 }
 
-function PhotoCard({ photo, onClick }) {
+function PhotoCard({ photo, onClick, t }) {
   return (
     <button
       onClick={onClick}
@@ -201,7 +212,7 @@ function PhotoCard({ photo, onClick }) {
       </div>
       <div className="p-3.5">
         <p className="font-medium text-sm text-[#1A1714] mb-1.5 truncate capitalize">
-          {photo.title || '摄影作品'}
+          {photo.title || t('gallery.photographer')}
         </p>
         {photo.exif && (
           <div className="flex gap-2 text-xs text-[#A89C91]">
@@ -212,9 +223,9 @@ function PhotoCard({ photo, onClick }) {
         )}
         {(photo.tags || []).length > 0 && (
           <div className="flex flex-wrap gap-1 mt-2">
-            {(photo.tags || []).slice(0, 2).map((t) => (
-              <span key={t} className="bg-[#F0EBE3] text-[#6B6158] text-xs px-1.5 py-0.5 rounded-full">
-                {t}
+            {(photo.tags || []).slice(0, 2).map((tag) => (
+              <span key={tag} className="bg-[#F0EBE3] text-[#6B6158] text-xs px-1.5 py-0.5 rounded-full">
+                {tag}
               </span>
             ))}
           </div>
@@ -238,7 +249,7 @@ function setCachedAnalysis(id, data) {
 }
 
 // ---- Detail view with on-demand AI analysis ----
-function DetailView({ photo, isFeatured, onBack }) {
+function DetailView({ photo, isFeatured, onBack, t }) {
   const [analysis, setAnalysis] = useState(() => getCachedAnalysis(photo.id))
   const [analyzing, setAnalyzing] = useState(false)
   const [analyzeError, setAnalyzeError] = useState(null)
@@ -253,7 +264,7 @@ function DetailView({ photo, isFeatured, onBack }) {
         body: JSON.stringify({ imageUrl: photo.full, exif: photo.exif, mode: 'gallery' }),
       })
       const data = await res.json()
-      if (!res.ok) throw new Error(data.error || 'AI 分析失败')
+      if (!res.ok) throw new Error(data.error || t('gallery.ai.analyzing'))
       setAnalysis(data)
       setCachedAnalysis(photo.id, data)
     } catch (err) {
@@ -276,16 +287,16 @@ function DetailView({ photo, isFeatured, onBack }) {
         onClick={onBack}
         className="flex items-center gap-2 text-[#A89C91] hover:text-[#1A1714] text-sm mb-8 transition-colors"
       >
-        ← 返回图库
+        ← {t('gallery.back')}
       </button>
 
       {/* Title */}
       <div className="mb-6">
         <p className="text-[#B8965A] text-xs tracking-[0.2em] uppercase mb-2">{photo.categoryLabel || 'Reference'}</p>
-        <h2 className="font-display text-2xl font-semibold text-[#1A1714] capitalize">{photo.title || '摄影作品'}</h2>
+        <h2 className="font-display text-2xl font-semibold text-[#1A1714] capitalize">{photo.title || t('gallery.photographer')}</h2>
         {photo.photographer && !isFeatured && (
           <p className="text-[#A89C91] text-xs mt-2">
-            摄影师：
+            {t('gallery.photographer')}：
             <a
               href={photo.photographerLink}
               target="_blank"
@@ -320,20 +331,20 @@ function DetailView({ photo, isFeatured, onBack }) {
 
       {/* EXIF */}
       {photo.exif && (
-        <ExifCards exif={photo.exif} camera={photo.exif.camera || photo.camera} />
+        <ExifCards exif={photo.exif} camera={photo.exif.camera || photo.camera} t={t} />
       )}
 
       {/* Analysis section */}
       {analysis ? (
         <div className="space-y-3 mt-8">
           <div className="flex items-center gap-3 mb-4">
-            <p className="text-[#A89C91] text-xs tracking-[0.2em] uppercase">AI 解读</p>
+            <p className="text-[#A89C91] text-xs tracking-[0.2em] uppercase">{t('gallery.ai.title')}</p>
             <div className="flex-1 h-px bg-[#E5DED5]" />
           </div>
-          <AnalysisCard icon="◉" label="曝光解读" content={analysis.exposure} accent="#EBF3FA" />
-          <AnalysisCard icon="◐" label="光线分析" content={analysis.light} accent="#EAFAF0" />
-          <AnalysisCard icon="◎" label="构图解读" content={analysis.composition} accent="#FBF4E8" />
-          <AnalysisCard icon="◈" label="风格与学习价值" content={analysis.style} accent="#F0EBFA" />
+          <AnalysisCard icon="◉" label={t('gallery.ai.exposure')} content={analysis.exposure} accent="#EBF3FA" />
+          <AnalysisCard icon="◐" label={t('gallery.ai.light')} content={analysis.light} accent="#EAFAF0" />
+          <AnalysisCard icon="◎" label={t('gallery.ai.composition')} content={analysis.composition} accent="#FBF4E8" />
+          <AnalysisCard icon="◈" label={t('gallery.ai.style')} content={analysis.style} accent="#F0EBFA" />
         </div>
       ) : (
         <div className="mt-8">
@@ -350,17 +361,17 @@ function DetailView({ photo, isFeatured, onBack }) {
             {analyzing ? (
               <>
                 <span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                AI 解读中，约 3–5 秒…
+                {t('gallery.ai.analyzing')}
               </>
             ) : (
               <>
                 <span className="text-[#B8965A]">◎</span>
-                用 AI 解读这张照片
+                {t('gallery.ai.cta')}
               </>
             )}
           </button>
           <p className="text-center text-[#A89C91] text-xs mt-3">
-            Claude 将结合画面内容和拍摄参数给出专属解读
+            {t('gallery.ai.footer')}
           </p>
         </div>
       )}
@@ -368,18 +379,18 @@ function DetailView({ photo, isFeatured, onBack }) {
   )
 }
 
-const PARAM_INFO = {
-  aperture:     { label: '光圈',     icon: '◉', format: v => `f/${v}` },
-  shutterSpeed: { label: '快门速度', icon: '◷', format: v => v },
-  iso:          { label: 'ISO',      icon: '◑', format: v => `${v}` },
-  focalLength:  { label: '焦段',     icon: '◎', format: v => `${v}mm` },
-}
+function ExifCards({ exif, camera, t }) {
+  const PARAM_INFO = {
+    aperture:     { label: t('gallery.exif.aperture'),  icon: '◉', format: v => `f/${v}` },
+    shutterSpeed: { label: t('gallery.exif.shutter'),   icon: '◷', format: v => v },
+    iso:          { label: t('gallery.exif.iso'),        icon: '◑', format: v => `${v}` },
+    focalLength:  { label: t('gallery.exif.focal'),      icon: '◎', format: v => `${v}mm` },
+  }
 
-function ExifCards({ exif, camera }) {
   return (
     <div>
       <div className="flex items-center gap-3 mb-4">
-        <p className="text-[#A89C91] text-xs tracking-[0.2em] uppercase">拍摄参数</p>
+        <p className="text-[#A89C91] text-xs tracking-[0.2em] uppercase">{t('gallery.exif.title')}</p>
         <div className="flex-1 h-px bg-[#E5DED5]" />
       </div>
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
