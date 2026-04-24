@@ -116,7 +116,7 @@ export default function AnalysisResult({ image, exif, analysis, onReset, hideRes
 }
 
 const W = 1080
-const PAD = 72
+const PAD = 88
 const TEXT_W = W - PAD * 2
 
 // Draw wrapped text, return final Y
@@ -175,15 +175,15 @@ async function generateShareCard({ image, analysis, exif, lang }) {
   const light = analysis.intentAnalysis || ''
   const improve = analysis.improvement || ''
 
-  pCtx.font = `bold 62px serif`
-  const feelH = measureWrapHeight(pCtx, feel, TEXT_W, 76)
+  pCtx.font = `bold 58px serif`
+  const feelH = measureWrapHeight(pCtx, feel, TEXT_W, 80)
 
-  pCtx.font = `34px sans-serif`
-  const lightH = light ? measureWrapHeight(pCtx, light, TEXT_W, 50) : 0
-  const improveH = improve ? measureWrapHeight(pCtx, improve, TEXT_W, 50) : 0
+  pCtx.font = `32px sans-serif`
+  const lightH = light ? measureWrapHeight(pCtx, light, TEXT_W, 54) : 0
+  const improveH = improve ? measureWrapHeight(pCtx, improve, TEXT_W, 54) : 0
 
-  const pillH = exif ? 64 : 0
-  const CONTENT_H = 56 + feelH + 32 + (light ? lightH + 20 + 1 + 28 : 0) + (improve ? improveH + 20 + 1 + 28 : 0) + pillH + 80 + 56
+  const pillH = exif ? 72 : 0
+  const CONTENT_H = 80 + feelH + 56 + (light ? 44 + 48 + lightH + 56 : 0) + (improve ? 44 + 48 + improveH + 56 : 0) + pillH + 100 + 72
   const PHOTO_H = Math.round(Math.max(W * 0.7, W)) // square-ish photo section
   const H = PHOTO_H + Math.max(CONTENT_H, 480)
 
@@ -216,46 +216,41 @@ async function generateShareCard({ image, analysis, exif, lang }) {
 
   // Gold accent bar
   ctx.fillStyle = '#B8965A'
-  ctx.fillRect(PAD, PHOTO_H + 48, 44, 4)
+  ctx.fillRect(PAD, PHOTO_H + 56, 40, 3)
 
-  let y = PHOTO_H + 72
+  let y = PHOTO_H + 96
 
   // Overall feel
   ctx.fillStyle = '#FFFFFF'
-  ctx.font = `bold 62px serif`
+  ctx.font = `bold 58px serif`
   ctx.textAlign = 'left'
-  y = canvasWrapText(ctx, feel, PAD, y, TEXT_W, 76)
-  y += 36
+  y = canvasWrapText(ctx, feel, PAD, y, TEXT_W, 80)
+  y += 56
 
-  // Light / intent analysis
-  if (light) {
-    ctx.fillStyle = 'rgba(255,255,255,0.15)'
+  // Section helper
+  const drawSection = (label, text) => {
+    // Divider
+    ctx.fillStyle = 'rgba(255,255,255,0.1)'
     ctx.fillRect(PAD, y, TEXT_W, 1)
-    y += 28
+    y += 44
+
+    // Label
     ctx.fillStyle = '#B8965A'
-    ctx.font = `500 26px sans-serif`
-    ctx.fillText(lang === 'en' ? '✦ LIGHTING' : '✦ 用光', PAD, y)
-    y += 38
-    ctx.fillStyle = 'rgba(255,255,255,0.82)'
-    ctx.font = `34px sans-serif`
-    y = canvasWrapText(ctx, light, PAD, y, TEXT_W, 50)
-    y += 20
+    ctx.font = `600 24px sans-serif`
+    ctx.letterSpacing = '2px'
+    ctx.fillText(label, PAD, y)
+    ctx.letterSpacing = '0px'
+    y += 48
+
+    // Body
+    ctx.fillStyle = 'rgba(255,255,255,0.80)'
+    ctx.font = `32px sans-serif`
+    y = canvasWrapText(ctx, text, PAD, y, TEXT_W, 54)
+    y += 56
   }
 
-  // Improvement
-  if (improve) {
-    ctx.fillStyle = 'rgba(255,255,255,0.15)'
-    ctx.fillRect(PAD, y, TEXT_W, 1)
-    y += 28
-    ctx.fillStyle = '#B8965A'
-    ctx.font = `500 26px sans-serif`
-    ctx.fillText(lang === 'en' ? '✦ TIPS' : '✦ 改进建议', PAD, y)
-    y += 38
-    ctx.fillStyle = 'rgba(255,255,255,0.82)'
-    ctx.font = `34px sans-serif`
-    y = canvasWrapText(ctx, improve, PAD, y, TEXT_W, 50)
-    y += 20
-  }
+  if (light) drawSection(lang === 'en' ? '✦  LIGHTING' : '✦  用光', light)
+  if (improve) drawSection(lang === 'en' ? '✦  TIPS' : '✦  改进建议', improve)
 
   // EXIF pills
   if (exif) {
@@ -265,31 +260,36 @@ async function generateShareCard({ image, analysis, exif, lang }) {
     if (exif.iso) pills.push(`ISO ${exif.iso}`)
     if (exif.focalLength) pills.push(`${exif.focalLength}mm`)
     if (pills.length) {
-      y += 8
+      ctx.fillStyle = 'rgba(255,255,255,0.1)'
+      ctx.fillRect(PAD, y, TEXT_W, 1)
+      y += 40
       ctx.font = '28px monospace'
       let px = PAD
       for (const pill of pills) {
-        const pw = ctx.measureText(pill).width + 32
-        ctx.fillStyle = 'rgba(184,150,90,0.18)'
+        const pw = ctx.measureText(pill).width + 36
+        ctx.fillStyle = 'rgba(184,150,90,0.15)'
         ctx.beginPath()
-        ctx.roundRect(px, y, pw, 48, 24)
+        ctx.roundRect(px, y, pw, 52, 26)
         ctx.fill()
+        ctx.strokeStyle = 'rgba(184,150,90,0.4)'
+        ctx.lineWidth = 1
+        ctx.stroke()
         ctx.fillStyle = '#B8965A'
-        ctx.fillText(pill, px + 16, y + 32)
-        px += pw + 12
+        ctx.fillText(pill, px + 18, y + 34)
+        px += pw + 14
       }
-      y += 64
+      y += 72
     }
   }
 
   // ── Branding ──
-  const brandY = H - 52
-  ctx.fillStyle = 'rgba(255,255,255,0.3)'
-  ctx.font = '28px sans-serif'
+  const brandY = H - 64
+  ctx.fillStyle = 'rgba(255,255,255,0.28)'
+  ctx.font = '26px sans-serif'
   ctx.textAlign = 'left'
   ctx.fillText('◎  追光 Lumen', PAD, brandY)
   ctx.textAlign = 'right'
-  ctx.fillStyle = 'rgba(255,255,255,0.25)'
+  ctx.fillStyle = 'rgba(255,255,255,0.2)'
   ctx.fillText('lumenphoto.up.railway.app', W - PAD, brandY)
 
   return canvas
