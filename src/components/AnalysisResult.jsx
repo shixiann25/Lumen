@@ -101,7 +101,7 @@ export default function AnalysisResult({ image, exif, analysis, onReset, hideRes
       )}
 
       {/* Share */}
-      <ShareButton t={t} lang={lang} />
+      {analysis && <ShareButton t={t} lang={lang} image={image} analysis={analysis} exif={exif} />}
 
       {!hideReset && onReset && (
         <button
@@ -115,50 +115,197 @@ export default function AnalysisResult({ image, exif, analysis, onReset, hideRes
   )
 }
 
-function ShareButton({ t, lang }) {
-  const [copied, setCopied] = useState(false)
-
-  const shareData = {
-    title: lang === 'en' ? 'Lumen — AI Photography Coach' : '追光 Lumen — AI 摄影解读',
-    text: lang === 'en'
-      ? 'Upload your photos and let AI explain your camera settings, lighting, and how to improve. Free to use!'
-      : '上传照片，AI 结合 EXIF 参数帮你理解光圈、快门、ISO，像摄影师朋友帮你看片。免费使用！',
-    url: 'https://lumenphoto.up.railway.app',
-  }
-
-  const handleShare = async () => {
-    if (navigator.share) {
-      try {
-        await navigator.share(shareData)
-      } catch (e) {
-        if (e.name !== 'AbortError') fallbackCopy()
-      }
+// Draw text with word wrap, returns next Y position
+function canvasWrapText(ctx, text, x, y, maxWidth, lineHeight) {
+  const chars = text.split('')
+  let line = ''
+  let currentY = y
+  for (let i = 0; i < chars.length; i++) {
+    const testLine = line + chars[i]
+    if (ctx.measureText(testLine).width > maxWidth && line !== '') {
+      ctx.fillText(line, x, currentY)
+      line = chars[i]
+      currentY += lineHeight
     } else {
-      fallbackCopy()
+      line = testLine
+    }
+  }
+  if (line) ctx.fillText(line, x, currentY)
+  return currentY + lineHeight
+}
+
+async function generateShareCard({ image, analysis, exif, lang }) {
+  const W = 1080
+  const H = 1440
+  const canvas = document.createElement('canvas')
+  canvas.width = W
+  canvas.height = H
+  const ctx = canvas.getContext('2d')
+
+  // Load photo
+  const img = new Image()
+  await new Promise((resolve, reject) => {
+    img.onload = resolve
+    img.onerror = reject
+    img.src = image
+  })
+
+  // Draw photo cover-fill top 65%
+  const photoH = Math.round(H * 0.65)
+  const imgAspect = img.width / img.height
+  const targetAspect = W / photoH
+  let sx, sy, sw, sh
+  if (imgAspect > targetAspect) {
+    sh = img.height; sw = sh * targetAspect; sx = (img.width - sw) / 2; sy = 0
+  } else {
+    sw = img.width; sh = sw / targetAspect; sx = 0; sy = (img.height - sh) / 2
+  }
+  ctx.drawImage(img, sx, sy, sw, sh, 0, 0, W, photoH)
+
+  // Gradient on photo bottom
+  const photoGrad = ctx.createLinearGradient(0, photoH * 0.5, 0, photoH)
+  photoGrad.addColorStop(0, 'rgba(26,23,20,0)')
+  photoGrad.addColorStop(1, 'rgba(26,23,20,0.6)')
+  ctx.fillStyle = photoGrad
+  ctx.fillRect(0, 0, W, photoH)
+
+  // Dark bottom panel
+  ctx.fillStyle = '#1A1714'
+  ctx.fillRect(0, photoH, W, H - photoH)
+
+  // Gold accent line
+  ctx.fillStyle = '#B8965A'
+  ctx.fillRect(72, photoH + 48, 48, 4)
+
+  let y = photoH + 80
+
+  // Overall feel (large)
+  const feel = analysis.overallFeel || ''
+  ctx.fillStyle = '#FFFFFF'
+  ctx.font = `bold 64px serif`
+  ctx.textAlign = 'left'
+  y = canvasWrapText(ctx, feel, 72, y, W - 144, 76)
+  y += 24
+
+  // Divider
+  ctx.fillStyle = 'rgba(255,255,255,0.12)'
+  ctx.fillRect(72, y, W - 144, 1)
+  y += 36
+
+  // Key insight — improvement, trimmed to ~2 lines
+  const insight = (analysis.improvement || analysis.intentAnalysis || '').slice(0, 120)
+  ctx.fillStyle = 'rgba(255,255,255,0.75)'
+  ctx.font = `36px sans-serif`
+  y = canvasWrapText(ctx, insight + (insight.length >= 120 ? '…' : ''), 72, y, W - 144, 52)
+  y += 20
+
+  // EXIF pills (if available)
+  if (exif) {
+    const pills = []
+    if (exif.aperture) pills.push(`f/${exif.aperture}`)
+    if (exif.shutterSpeed || exif.exposureTime) pills.push(exif.shutterSpeed || exif.exposureTime)
+    if (exif.iso) pills.push(`ISO ${exif.iso}`)
+    if (exif.focalLength) pills.push(`${exif.focalLength}mm`)
+    if (pills.length > 0) {
+      ctx.font = '30px monospace'
+      let px = 72
+      for (const pill of pills) {
+        const pw = ctx.measureText(pill).width + 32
+        ctx.fillStyle = 'rgba(184,150,90,0.2)'
+        ctx.beginPath()
+        ctx.roundRect(px, y, pw, 48, 24)
+        ctx.fill()
+        ctx.fillStyle = '#B8965A'
+        ctx.fillText(pill, px + 16, y + 32)
+        px += pw + 12
+      }
+      y += 68
     }
   }
 
-  const fallbackCopy = async () => {
+  // Branding at bottom
+  const brandY = H - 56
+  ctx.fillStyle = 'rgba(255,255,255,0.35)'
+  ctx.font = '30px sans-serif'
+  ctx.textAlign = 'left'
+  ctx.fillText('◎  追光 Lumen', 72, brandY)
+  ctx.textAlign = 'right'
+  ctx.fillText('lumenphoto.up.railway.app', W - 72, brandY)
+
+  return canvas
+}
+
+function ShareButton({ t, lang, image, analysis, exif }) {
+  const [status, setStatus] = useState('idle') // idle | generating | done | copied
+
+  const handleShare = async () => {
+    setStatus('generating')
     try {
-      await navigator.clipboard.writeText(shareData.url)
-      setCopied(true)
-      setTimeout(() => setCopied(false), 2000)
-    } catch {}
+      const canvas = await generateShareCard({ image, analysis, exif, lang })
+      const blob = await new Promise(resolve => canvas.toBlob(resolve, 'image/jpeg', 0.92))
+      const file = new File([blob], 'lumen-photo-analysis.jpg', { type: 'image/jpeg' })
+
+      // Try native share with image file
+      if (navigator.share && navigator.canShare && navigator.canShare({ files: [file] })) {
+        await navigator.share({
+          files: [file],
+          title: lang === 'en' ? 'Lumen — AI Photography Analysis' : '追光 Lumen — 照片解读',
+          text: lang === 'en' ? 'lumenphoto.up.railway.app' : 'lumenphoto.up.railway.app',
+        })
+        setStatus('done')
+      } else if (navigator.share) {
+        // Share without file (older browsers)
+        const blobUrl = URL.createObjectURL(blob)
+        // Download the image and share URL
+        const a = document.createElement('a')
+        a.href = blobUrl
+        a.download = 'lumen-analysis.jpg'
+        a.click()
+        URL.revokeObjectURL(blobUrl)
+        await navigator.share({
+          title: lang === 'en' ? 'Lumen — AI Photography Coach' : '追光 Lumen — AI 摄影解读',
+          url: 'https://lumenphoto.up.railway.app',
+        })
+        setStatus('done')
+      } else {
+        // Desktop: download image
+        const blobUrl = URL.createObjectURL(blob)
+        const a = document.createElement('a')
+        a.href = blobUrl
+        a.download = 'lumen-analysis.jpg'
+        a.click()
+        URL.revokeObjectURL(blobUrl)
+        setStatus('done')
+      }
+    } catch (e) {
+      if (e.name !== 'AbortError') console.error('Share failed', e)
+      setStatus('idle')
+    }
+    setTimeout(() => setStatus('idle'), 3000)
   }
+
+  const label = status === 'generating'
+    ? t('share.generating')
+    : status === 'done'
+      ? t('share.done')
+      : t('share.card.btn')
+
+  const icon = status === 'generating' ? '…' : status === 'done' ? '✓' : '↑'
 
   return (
     <div className="border border-[#E5DED5] rounded-2xl p-5 bg-white">
-      <div className="flex items-center justify-between">
+      <div className="flex items-center justify-between gap-4">
         <div>
-          <p className="font-semibold text-sm text-[#1A1714]">{t('share.title')}</p>
-          <p className="text-xs text-[#A89C91] mt-0.5">{t('share.desc')}</p>
+          <p className="font-semibold text-sm text-[#1A1714]">{t('share.card.title')}</p>
+          <p className="text-xs text-[#A89C91] mt-0.5">{t('share.card.desc')}</p>
         </div>
         <button
           onClick={handleShare}
-          className="flex items-center gap-2 px-4 py-2.5 rounded-full bg-[#1A1714] text-white text-sm font-medium hover:bg-[#B8965A] transition-colors flex-shrink-0 ml-4"
+          disabled={status === 'generating'}
+          className="flex items-center gap-2 px-4 py-2.5 rounded-full bg-[#1A1714] text-white text-sm font-medium hover:bg-[#B8965A] transition-colors flex-shrink-0 disabled:opacity-60 disabled:cursor-not-allowed"
         >
-          <span>{copied ? '✓' : '↑'}</span>
-          <span>{copied ? t('share.copied') : t('share.btn')}</span>
+          <span>{icon}</span>
+          <span>{label}</span>
         </button>
       </div>
     </div>
