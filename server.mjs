@@ -387,6 +387,10 @@ app.post('/api/analyze', async (req, res) => {
     return res.status(400).json({ error: '缺少图片数据' })
   }
 
+  // Usage log
+  const camera = exif?.make ? `${exif.make} ${exif.model || ''}`.trim() : 'unknown'
+  console.log(`[analyze] ${new Date().toISOString()} mode=${mode || 'upload'} lang=${lang} camera=${camera}`)
+
   const imageSource = imageUrl
     ? { type: 'url', url: imageUrl }
     : { type: 'base64', media_type: mediaType || 'image/jpeg', data: imageBase64 }
