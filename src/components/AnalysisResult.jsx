@@ -115,34 +115,50 @@ export default function AnalysisResult({ image, exif, analysis, onReset, hideRes
   )
 }
 
-// Draw text with word wrap, returns next Y position
+const W = 1080
+const PAD = 72
+const TEXT_W = W - PAD * 2
+
+// Draw wrapped text, return final Y
 function canvasWrapText(ctx, text, x, y, maxWidth, lineHeight) {
+  if (!text) return y
   const chars = text.split('')
   let line = ''
-  let currentY = y
-  for (let i = 0; i < chars.length; i++) {
-    const testLine = line + chars[i]
-    if (ctx.measureText(testLine).width > maxWidth && line !== '') {
-      ctx.fillText(line, x, currentY)
-      line = chars[i]
-      currentY += lineHeight
+  let curY = y
+  for (const ch of chars) {
+    const test = line + ch
+    if (ctx.measureText(test).width > maxWidth && line) {
+      ctx.fillText(line, x, curY)
+      line = ch
+      curY += lineHeight
     } else {
-      line = testLine
+      line = test
     }
   }
-  if (line) ctx.fillText(line, x, currentY)
-  return currentY + lineHeight
+  if (line) ctx.fillText(line, x, curY)
+  return curY + lineHeight
+}
+
+// Measure how tall wrapped text will be without drawing
+function measureWrapHeight(ctx, text, maxWidth, lineHeight) {
+  if (!text) return 0
+  const chars = text.split('')
+  let line = ''
+  let lines = 1
+  for (const ch of chars) {
+    const test = line + ch
+    if (ctx.measureText(test).width > maxWidth && line) {
+      lines++
+      line = ch
+    } else {
+      line = test
+    }
+  }
+  return lines * lineHeight
 }
 
 async function generateShareCard({ image, analysis, exif, lang }) {
-  const W = 1080
-  const H = 1440
-  const canvas = document.createElement('canvas')
-  canvas.width = W
-  canvas.height = H
-  const ctx = canvas.getContext('2d')
-
-  // Load photo
+  // Load photo first
   const img = new Image()
   await new Promise((resolve, reject) => {
     img.onload = resolve
@@ -150,68 +166,111 @@ async function generateShareCard({ image, analysis, exif, lang }) {
     img.src = image
   })
 
-  // Draw photo cover-fill top 65%
-  const photoH = Math.round(H * 0.65)
+  // Measure content height with offscreen ctx
+  const probe = document.createElement('canvas')
+  probe.width = W
+  const pCtx = probe.getContext('2d')
+
+  const feel = analysis.overallFeel || ''
+  const light = analysis.intentAnalysis || ''
+  const improve = analysis.improvement || ''
+
+  pCtx.font = `bold 62px serif`
+  const feelH = measureWrapHeight(pCtx, feel, TEXT_W, 76)
+
+  pCtx.font = `34px sans-serif`
+  const lightH = light ? measureWrapHeight(pCtx, light, TEXT_W, 50) : 0
+  const improveH = improve ? measureWrapHeight(pCtx, improve, TEXT_W, 50) : 0
+
+  const pillH = exif ? 64 : 0
+  const CONTENT_H = 56 + feelH + 32 + (light ? lightH + 20 + 1 + 28 : 0) + (improve ? improveH + 20 + 1 + 28 : 0) + pillH + 80 + 56
+  const PHOTO_H = Math.round(Math.max(W * 0.7, W)) // square-ish photo section
+  const H = PHOTO_H + Math.max(CONTENT_H, 480)
+
+  const canvas = document.createElement('canvas')
+  canvas.width = W
+  canvas.height = H
+  const ctx = canvas.getContext('2d')
+
+  // ── Photo (cover-fill) ──
   const imgAspect = img.width / img.height
-  const targetAspect = W / photoH
+  const targetAspect = W / PHOTO_H
   let sx, sy, sw, sh
   if (imgAspect > targetAspect) {
     sh = img.height; sw = sh * targetAspect; sx = (img.width - sw) / 2; sy = 0
   } else {
     sw = img.width; sh = sw / targetAspect; sx = 0; sy = (img.height - sh) / 2
   }
-  ctx.drawImage(img, sx, sy, sw, sh, 0, 0, W, photoH)
+  ctx.drawImage(img, sx, sy, sw, sh, 0, 0, W, PHOTO_H)
 
-  // Gradient on photo bottom
-  const photoGrad = ctx.createLinearGradient(0, photoH * 0.5, 0, photoH)
-  photoGrad.addColorStop(0, 'rgba(26,23,20,0)')
-  photoGrad.addColorStop(1, 'rgba(26,23,20,0.6)')
-  ctx.fillStyle = photoGrad
-  ctx.fillRect(0, 0, W, photoH)
+  // Photo bottom gradient
+  const pg = ctx.createLinearGradient(0, PHOTO_H * 0.55, 0, PHOTO_H)
+  pg.addColorStop(0, 'rgba(26,23,20,0)')
+  pg.addColorStop(1, 'rgba(26,23,20,0.55)')
+  ctx.fillStyle = pg
+  ctx.fillRect(0, 0, W, PHOTO_H)
 
-  // Dark bottom panel
+  // ── Dark content panel ──
   ctx.fillStyle = '#1A1714'
-  ctx.fillRect(0, photoH, W, H - photoH)
+  ctx.fillRect(0, PHOTO_H, W, H - PHOTO_H)
 
-  // Gold accent line
+  // Gold accent bar
   ctx.fillStyle = '#B8965A'
-  ctx.fillRect(72, photoH + 48, 48, 4)
+  ctx.fillRect(PAD, PHOTO_H + 48, 44, 4)
 
-  let y = photoH + 80
+  let y = PHOTO_H + 72
 
-  // Overall feel (large)
-  const feel = analysis.overallFeel || ''
+  // Overall feel
   ctx.fillStyle = '#FFFFFF'
-  ctx.font = `bold 64px serif`
+  ctx.font = `bold 62px serif`
   ctx.textAlign = 'left'
-  y = canvasWrapText(ctx, feel, 72, y, W - 144, 76)
-  y += 24
-
-  // Divider
-  ctx.fillStyle = 'rgba(255,255,255,0.12)'
-  ctx.fillRect(72, y, W - 144, 1)
+  y = canvasWrapText(ctx, feel, PAD, y, TEXT_W, 76)
   y += 36
 
-  // Key insight — improvement, trimmed to ~2 lines
-  const insight = (analysis.improvement || analysis.intentAnalysis || '').slice(0, 120)
-  ctx.fillStyle = 'rgba(255,255,255,0.75)'
-  ctx.font = `36px sans-serif`
-  y = canvasWrapText(ctx, insight + (insight.length >= 120 ? '…' : ''), 72, y, W - 144, 52)
-  y += 20
+  // Light / intent analysis
+  if (light) {
+    ctx.fillStyle = 'rgba(255,255,255,0.15)'
+    ctx.fillRect(PAD, y, TEXT_W, 1)
+    y += 28
+    ctx.fillStyle = '#B8965A'
+    ctx.font = `500 26px sans-serif`
+    ctx.fillText(lang === 'en' ? '✦ LIGHTING' : '✦ 用光', PAD, y)
+    y += 38
+    ctx.fillStyle = 'rgba(255,255,255,0.82)'
+    ctx.font = `34px sans-serif`
+    y = canvasWrapText(ctx, light, PAD, y, TEXT_W, 50)
+    y += 20
+  }
 
-  // EXIF pills (if available)
+  // Improvement
+  if (improve) {
+    ctx.fillStyle = 'rgba(255,255,255,0.15)'
+    ctx.fillRect(PAD, y, TEXT_W, 1)
+    y += 28
+    ctx.fillStyle = '#B8965A'
+    ctx.font = `500 26px sans-serif`
+    ctx.fillText(lang === 'en' ? '✦ TIPS' : '✦ 改进建议', PAD, y)
+    y += 38
+    ctx.fillStyle = 'rgba(255,255,255,0.82)'
+    ctx.font = `34px sans-serif`
+    y = canvasWrapText(ctx, improve, PAD, y, TEXT_W, 50)
+    y += 20
+  }
+
+  // EXIF pills
   if (exif) {
     const pills = []
     if (exif.aperture) pills.push(`f/${exif.aperture}`)
     if (exif.shutterSpeed || exif.exposureTime) pills.push(exif.shutterSpeed || exif.exposureTime)
     if (exif.iso) pills.push(`ISO ${exif.iso}`)
     if (exif.focalLength) pills.push(`${exif.focalLength}mm`)
-    if (pills.length > 0) {
-      ctx.font = '30px monospace'
-      let px = 72
+    if (pills.length) {
+      y += 8
+      ctx.font = '28px monospace'
+      let px = PAD
       for (const pill of pills) {
         const pw = ctx.measureText(pill).width + 32
-        ctx.fillStyle = 'rgba(184,150,90,0.2)'
+        ctx.fillStyle = 'rgba(184,150,90,0.18)'
         ctx.beginPath()
         ctx.roundRect(px, y, pw, 48, 24)
         ctx.fill()
@@ -219,18 +278,19 @@ async function generateShareCard({ image, analysis, exif, lang }) {
         ctx.fillText(pill, px + 16, y + 32)
         px += pw + 12
       }
-      y += 68
+      y += 64
     }
   }
 
-  // Branding at bottom
-  const brandY = H - 56
-  ctx.fillStyle = 'rgba(255,255,255,0.35)'
-  ctx.font = '30px sans-serif'
+  // ── Branding ──
+  const brandY = H - 52
+  ctx.fillStyle = 'rgba(255,255,255,0.3)'
+  ctx.font = '28px sans-serif'
   ctx.textAlign = 'left'
-  ctx.fillText('◎  追光 Lumen', 72, brandY)
+  ctx.fillText('◎  追光 Lumen', PAD, brandY)
   ctx.textAlign = 'right'
-  ctx.fillText('lumenphoto.up.railway.app', W - 72, brandY)
+  ctx.fillStyle = 'rgba(255,255,255,0.25)'
+  ctx.fillText('lumenphoto.up.railway.app', W - PAD, brandY)
 
   return canvas
 }
