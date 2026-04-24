@@ -105,8 +105,6 @@ export default function HistoryPage({ history, removeRecord, clearAll }) {
 }
 
 function HistoryCard({ record, onClick, onDelete, t, lang }) {
-  const [hover, setHover] = useState(false)
-
   const formatDate = (ts) => {
     const d = new Date(ts)
     const now = new Date()
@@ -121,8 +119,6 @@ function HistoryCard({ record, onClick, onDelete, t, lang }) {
   return (
     <div
       className="group relative bg-white rounded-2xl overflow-hidden border border-[#E5DED5] hover:border-[#B8965A]/50 hover:shadow-lg transition-all duration-300 cursor-pointer"
-      onMouseEnter={() => setHover(true)}
-      onMouseLeave={() => setHover(false)}
       onClick={onClick}
     >
       {/* Thumbnail */}
@@ -138,16 +134,14 @@ function HistoryCard({ record, onClick, onDelete, t, lang }) {
             ◎
           </div>
         )}
-        {/* Delete button */}
-        {hover && (
-          <button
-            onClick={(e) => { e.stopPropagation(); onDelete() }}
-            className="absolute top-2 right-2 w-7 h-7 rounded-full bg-black/60 text-white text-xs flex items-center justify-center hover:bg-red-500/80 transition-colors"
-            title="删除"
-          >
-            ×
-          </button>
-        )}
+        {/* Delete button — always visible on mobile, hover-only on desktop */}
+        <button
+          onClick={(e) => { e.stopPropagation(); onDelete() }}
+          className="absolute top-2 right-2 w-8 h-8 rounded-full bg-black/60 text-white text-sm flex items-center justify-center hover:bg-red-500/80 transition-colors sm:opacity-0 sm:group-hover:opacity-100"
+          title="删除"
+        >
+          ×
+        </button>
         {/* Overall feel overlay */}
         {record.analysis?.overallFeel && (
           <div className="absolute bottom-0 left-0 right-0 p-3 bg-gradient-to-t from-black/70 opacity-0 group-hover:opacity-100 transition-opacity duration-300">

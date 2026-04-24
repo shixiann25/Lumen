@@ -18,13 +18,13 @@ export default function HomePage({ setPage }) {
           style={{ backgroundImage: 'url("data:image/svg+xml,%3Csvg viewBox=\'0 0 256 256\' xmlns=\'http://www.w3.org/2000/svg\'%3E%3Cfilter id=\'noise\'%3E%3CfeTurbulence type=\'fractalNoise\' baseFrequency=\'0.9\' numOctaves=\'4\' stitchTiles=\'stitch\'/%3E%3C/filter%3E%3Crect width=\'100%25\' height=\'100%25\' filter=\'url(%23noise)\'/%3E%3C/svg%3E")' }}
         />
 
-        <div className="relative max-w-6xl mx-auto px-6 py-32 w-full">
+        <div className="relative max-w-6xl mx-auto px-5 sm:px-6 py-20 sm:py-32 w-full">
           <div className="max-w-2xl">
             <div className="flex items-center gap-3 mb-10">
               <div className="h-px w-8 bg-[#B8965A]" />
               <span className="text-[#B8965A] text-xs tracking-[0.25em] uppercase font-light">{t('home.eyebrow')}</span>
             </div>
-            <h1 className="font-display text-5xl md:text-7xl font-semibold leading-[1.05] mb-8 text-white">
+            <h1 className="font-display text-4xl sm:text-5xl md:text-7xl font-semibold leading-[1.05] mb-6 sm:mb-8 text-white">
               {t('home.hero.line1')}<br />
               <em className="italic text-[#B8965A] not-italic font-semibold">{t('home.hero.line2')}</em><br />
               {t('home.hero.line3')}

@@ -1,6 +1,7 @@
 export const translations = {
   zh: {
     // Navbar
+    'nav.home': '首页',
     'nav.learn': '摄影知识',
     'nav.gallery': '参考图库',
     'nav.history': '历史记录',
@@ -161,6 +162,7 @@ export const translations = {
 
   en: {
     // Navbar
+    'nav.home': 'Home',
     'nav.learn': 'Photography',
     'nav.gallery': 'Gallery',
     'nav.history': 'History',

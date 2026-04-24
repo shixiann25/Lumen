@@ -295,14 +295,14 @@ function DropZone({ dragging, onDrop, onDragOver, onDragLeave, onClick, t }) {
   return (
     <div
       onDrop={onDrop} onDragOver={onDragOver} onDragLeave={onDragLeave} onClick={onClick}
-      className={`relative border-2 border-dashed rounded-2xl p-16 text-center cursor-pointer transition-all ${
+      className={`relative border-2 border-dashed rounded-2xl p-8 sm:p-16 text-center cursor-pointer transition-all ${
         dragging
           ? 'border-[#B8965A] bg-[#FBF4E8]'
           : 'border-[#E5DED5] hover:border-[#B8965A]/50 hover:bg-[#FDFCFA]'
       }`}
     >
-      <div className="flex flex-col items-center gap-4">
-        <div className="w-16 h-16 rounded-full bg-[#F0EBE3] flex items-center justify-center text-2xl text-[#B8965A]">◎</div>
+      <div className="flex flex-col items-center gap-3 sm:gap-4">
+        <div className="w-12 h-12 sm:w-16 sm:h-16 rounded-full bg-[#F0EBE3] flex items-center justify-center text-xl sm:text-2xl text-[#B8965A]">◎</div>
         <div>
           <p className="font-semibold text-[#1A1714] mb-1">{t('upload.drop.title')}</p>
           <p className="text-[#A89C91] text-sm">{t('upload.drop.formats')}</p>
