@@ -103,6 +103,10 @@ export const translations = {
     'result.ai.improve': '改进建议',
     'result.ai.lens': '镜头建议',
     'result.reset': '+ 再上传一张照片',
+    'share.title': '觉得有用？分享给朋友',
+    'share.desc': '免费使用，帮助更多人看懂自己的照片',
+    'share.btn': '分享',
+    'share.copied': '已复制链接',
 
     // GalleryPage
     'gallery.eyebrow': 'REFERENCE',
@@ -266,6 +270,10 @@ export const translations = {
     'result.ai.improve': 'How to Improve',
     'result.ai.lens': 'Lens Advice',
     'result.reset': '+ Upload Another Photo',
+    'share.title': 'Finding this useful? Share it',
+    'share.desc': 'Free to use — help more people understand their photos',
+    'share.btn': 'Share',
+    'share.copied': 'Link copied!',
 
     // GalleryPage
     'gallery.eyebrow': 'REFERENCE',

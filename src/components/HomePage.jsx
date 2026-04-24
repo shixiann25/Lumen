@@ -1,8 +1,33 @@
+import { useState } from 'react'
 import { galleryItems } from '../data/gallery'
 import { useLang } from '../contexts/LangContext'
 
 export default function HomePage({ setPage }) {
   const { t, lang } = useLang()
+  const [copied, setCopied] = useState(false)
+
+  const handleShare = async () => {
+    const shareData = {
+      title: lang === 'en' ? 'Lumen — AI Photography Coach' : '追光 Lumen — AI 摄影解读',
+      text: lang === 'en'
+        ? 'Upload your photos and let AI explain your camera settings and how to improve. Free!'
+        : '上传照片，AI 帮你理解光圈快门 ISO，像摄影师朋友帮你看片。免费！',
+      url: 'https://lumenphoto.up.railway.app',
+    }
+    if (navigator.share) {
+      try { await navigator.share(shareData) } catch (e) { if (e.name !== 'AbortError') copyUrl() }
+    } else {
+      copyUrl()
+    }
+  }
+
+  const copyUrl = async () => {
+    try {
+      await navigator.clipboard.writeText('https://lumenphoto.up.railway.app')
+      setCopied(true)
+      setTimeout(() => setCopied(false), 2000)
+    } catch {}
+  }
 
   return (
     <div>
@@ -170,12 +195,21 @@ export default function HomePage({ setPage }) {
         <div className="max-w-6xl mx-auto px-6 text-center">
           <h2 className="font-display text-4xl font-semibold text-white mb-4">{t('home.bottom.title')}</h2>
           <p className="text-white/70 mb-8">{t('home.bottom.desc')}</p>
-          <button
-            onClick={() => setPage('upload')}
-            className="bg-white text-[#B8965A] font-semibold px-10 py-4 rounded-full hover:bg-[#F8F6F2] transition-colors"
-          >
-            {t('home.bottom.cta')}
-          </button>
+          <div className="flex flex-col sm:flex-row items-center justify-center gap-3">
+            <button
+              onClick={() => setPage('upload')}
+              className="bg-white text-[#B8965A] font-semibold px-10 py-4 rounded-full hover:bg-[#F8F6F2] transition-colors"
+            >
+              {t('home.bottom.cta')}
+            </button>
+            <button
+              onClick={handleShare}
+              className="flex items-center gap-2 border border-white/40 text-white px-8 py-4 rounded-full font-medium hover:border-white hover:bg-white/10 transition-colors"
+            >
+              <span>↑</span>
+              <span>{copied ? t('share.copied') : t('share.btn')}</span>
+            </button>
+          </div>
         </div>
       </section>
 

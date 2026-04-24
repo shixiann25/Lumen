@@ -1,3 +1,4 @@
+import { useState } from 'react'
 import PhotoChat from './PhotoChat'
 import { useLang } from '../contexts/LangContext'
 
@@ -99,6 +100,9 @@ export default function AnalysisResult({ image, exif, analysis, onReset, hideRes
         />
       )}
 
+      {/* Share */}
+      <ShareButton t={t} lang={lang} />
+
       {!hideReset && onReset && (
         <button
           onClick={onReset}
@@ -107,6 +111,56 @@ export default function AnalysisResult({ image, exif, analysis, onReset, hideRes
           {t('result.reset')}
         </button>
       )}
+    </div>
+  )
+}
+
+function ShareButton({ t, lang }) {
+  const [copied, setCopied] = useState(false)
+
+  const shareData = {
+    title: lang === 'en' ? 'Lumen — AI Photography Coach' : '追光 Lumen — AI 摄影解读',
+    text: lang === 'en'
+      ? 'Upload your photos and let AI explain your camera settings, lighting, and how to improve. Free to use!'
+      : '上传照片，AI 结合 EXIF 参数帮你理解光圈、快门、ISO，像摄影师朋友帮你看片。免费使用！',
+    url: 'https://lumenphoto.up.railway.app',
+  }
+
+  const handleShare = async () => {
+    if (navigator.share) {
+      try {
+        await navigator.share(shareData)
+      } catch (e) {
+        if (e.name !== 'AbortError') fallbackCopy()
+      }
+    } else {
+      fallbackCopy()
+    }
+  }
+
+  const fallbackCopy = async () => {
+    try {
+      await navigator.clipboard.writeText(shareData.url)
+      setCopied(true)
+      setTimeout(() => setCopied(false), 2000)
+    } catch {}
+  }
+
+  return (
+    <div className="border border-[#E5DED5] rounded-2xl p-5 bg-white">
+      <div className="flex items-center justify-between">
+        <div>
+          <p className="font-semibold text-sm text-[#1A1714]">{t('share.title')}</p>
+          <p className="text-xs text-[#A89C91] mt-0.5">{t('share.desc')}</p>
+        </div>
+        <button
+          onClick={handleShare}
+          className="flex items-center gap-2 px-4 py-2.5 rounded-full bg-[#1A1714] text-white text-sm font-medium hover:bg-[#B8965A] transition-colors flex-shrink-0 ml-4"
+        >
+          <span>{copied ? '✓' : '↑'}</span>
+          <span>{copied ? t('share.copied') : t('share.btn')}</span>
+        </button>
+      </div>
     </div>
   )
 }
