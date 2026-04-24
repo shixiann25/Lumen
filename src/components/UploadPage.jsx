@@ -124,6 +124,7 @@ export default function UploadPage({ addRecord }) {
           mediaType: compressedType,
           exif: exifData,
           userContext: { device: device.trim(), focusAreas, focusNote: focusNote.trim() },
+          lang,
         }),
       })
       if (!res.ok) {

@@ -184,7 +184,24 @@ app.get('/api/gallery', async (req, res) => {
 })
 
 // --- AI analyze endpoint ---
-function buildExifText(exif) {
+function buildExifText(exif, lang = 'zh') {
+  if (lang === 'en') {
+    if (!exif) return '(No EXIF data available — may be a screenshot or processed image)'
+    const wb = exif.whiteBalance !== undefined
+      ? (exif.whiteBalance === 0 ? 'Auto (AWB)' : 'Manual')
+      : (exif.whiteBalanceMode || 'Unknown')
+    return `
+EXIF Data:
+- Aperture: ${exif.aperture ? `f/${exif.aperture}` : 'Unknown'}
+- Shutter Speed: ${exif.shutterSpeed || exif.exposureTime || 'Unknown'}
+- ISO: ${exif.iso || 'Unknown'}
+- Focal Length: ${exif.focalLength ? `${exif.focalLength}mm` : 'Unknown'}
+- White Balance: ${wb}
+- Exposure Mode: ${exif.exposureMode === 0 ? 'Auto Exposure' : exif.exposureMode === 1 ? 'Manual Exposure' : (exif.exposureProgram || 'Unknown')}
+- Date/Time: ${exif.dateTime || 'Unknown'}
+- Camera: ${exif.make ? `${exif.make} ${exif.model || ''}` : (exif.camera || 'Unknown')}
+`.trim()
+  }
   if (!exif) return '（未能读取到 EXIF 数据，可能是截图或经过处理的图片）'
   const wb = exif.whiteBalance !== undefined
     ? (exif.whiteBalance === 0 ? '自动（AWB）' : '手动')
@@ -211,8 +228,61 @@ const FOCUS_LABEL = {
   portrait: '人像用光',
 }
 
-const ANALYZE_PROMPT = (exifText, hasPortrait, userContext = {}) => {
+const FOCUS_LABEL_EN = {
+  exposure: 'exposure settings',
+  light: 'lighting analysis',
+  composition: 'composition',
+  focal: 'focal length choice',
+  manual: 'manual mode',
+  portrait: 'portrait lighting',
+}
+
+const ANALYZE_PROMPT = (exifText, hasPortrait, userContext = {}, lang = 'zh') => {
   const { device, focusAreas = [], focusNote = '' } = userContext
+
+  if (lang === 'en') {
+    const deviceLine = device
+      ? `The user's camera/device: ${device}`
+      : 'No device info provided — infer from EXIF camera model or give general advice.'
+    const focusLine = focusAreas.length > 0
+      ? `The user wants to focus on: ${focusAreas.map(f => FOCUS_LABEL_EN[f] || f).join(', ')} — please give more detailed analysis in those sections.`
+      : ''
+    const focusNoteLine = focusNote
+      ? `User's additional note: "${focusNote}" — please address this specifically in your analysis.`
+      : ''
+    return `You are a friendly, experienced photographer helping a beginner understand their photo. They want to understand how camera settings relate to the final image.
+
+${deviceLine}
+${focusLine}
+${focusNoteLine}
+
+${exifText}
+
+Based on the EXIF data and the image itself, provide an encouraging, easy-to-understand analysis covering:
+
+1. **Settings Explanation**: For this specific photo, explain how the key settings (aperture, shutter speed, ISO, white balance) affected the result. Be concrete — refer to what's actually in the image, don't just explain theory.${focusAreas.includes('exposure') ? ' The user is especially interested in exposure settings — explain how the parameters work together.' : ''}
+
+2. **Manual Mode Tips**: If the EXIF shows auto exposure was used, explain how to shoot this same scene in manual mode (M) — give specific aperture/shutter/ISO values and the reasoning behind each choice.${focusAreas.includes('manual') ? ' The user wants to learn manual mode — explain the logic behind each setting choice clearly.' : ''}
+
+3. **Lighting & Intent Analysis**: Analyze the light direction and quality (front light, side light, backlight, diffused). Evaluate the existing lighting.${hasPortrait || focusAreas.includes('portrait') ? ' There is a person in the frame or the user cares about portrait lighting — focus on how the natural light falls on the face, whether there is good shadow and dimension, and how to adjust position next time.' : ' Analyze what the photographer was trying to express and highlight compositional and lighting strengths.'}${focusAreas.includes('light') ? ' The user is especially interested in lighting — explain this light\'s characteristics and how to seek out or create similar light.' : ''}
+
+4. **Improvement Suggestions**: Give 1-2 of the most impactful, immediately actionable improvements for next time. Be specific.${focusAreas.includes('composition') ? ' The user cares about composition — specifically analyze what worked and what to adjust in framing or angle next time.' : ''}
+
+5. **Lens Advice**: ${device ? `Given the user's ${device}, ` : ''}evaluate how well the current focal length worked for this scene.${focusAreas.includes('focal') ? ' The user is especially interested in focal length — explain which focal lengths suit this scene and their different effects.' : ' If a different focal length would make a meaningful difference, give a specific recommendation.'}
+
+Tone: warm, conversational, like a photographer friend looking at photos together. Avoid jargon overload. 2-4 sentences per section.
+
+Reply in English. Return strictly as JSON (no double quotes inside field values):
+{
+  "paramExplanation": "settings explanation...",
+  "manualModeTip": "manual mode tips...",
+  "intentAnalysis": "lighting and intent analysis...",
+  "improvement": "improvement suggestions...",
+  "lensTip": "lens advice...",
+  "overallFeel": "one sentence summing up this photo (under 10 words)"
+}`
+  }
+
   const deviceLine = device
     ? `用户使用的设备：${device}`
     : '用户未提供设备信息，请根据 EXIF 中的相机型号推断，或给出通用建议。'
@@ -256,7 +326,35 @@ ${exifText}
 }`
 }
 
-const GALLERY_PROMPT = (exifText) => `你是一位经验丰富的摄影师，正在解读一张参考照片，帮助摄影爱好者理解这张照片的拍摄手法和学习价值。
+const GALLERY_PROMPT = (exifText, lang = 'zh') => {
+  if (lang === 'en') {
+    return `You are an experienced photographer analyzing a reference photo to help photography enthusiasts understand the technique and learning value.
+
+${exifText}
+
+Based on the EXIF data and the image, analyze from these four angles:
+
+1. **Exposure Breakdown**: How do aperture, shutter speed, and ISO work together, and what visual effect does each produce (e.g. background blur, motion freeze or blur, noise control)? Be concrete — refer to what's actually in the image.
+
+2. **Light Analysis**: The direction (front/side/back/diffused), quality (hard/soft), and time of day of the light, and how it shapes the subject's texture, outline, or mood.
+
+3. **Composition Breakdown**: Which compositional techniques are used (rule of thirds, leading lines, negative space, framing, etc.), how the focal length affects perspective and depth of field, and how the visual weight is arranged.
+
+4. **Style & Learning Value**: The overall visual style and emotion of the photo, and one specific, concrete takeaway for photography learners — explain why it's worth learning and how to apply it next time.
+
+Tone: clear and professional, like a photography teacher critiquing work. 2-3 sentences per section.
+
+Reply in English. Return strictly as JSON (no double quotes inside field values):
+{
+  "exposure": "exposure breakdown...",
+  "light": "light analysis...",
+  "composition": "composition breakdown...",
+  "style": "style and learning value...",
+  "overallFeel": "one sentence summing up this photo (under 10 words)"
+}`
+  }
+
+  return `你是一位经验丰富的摄影师，正在解读一张参考照片，帮助摄影爱好者理解这张照片的拍摄手法和学习价值。
 
 ${exifText}
 
@@ -280,9 +378,10 @@ ${exifText}
   "style": "风格与学习价值内容...",
   "overallFeel": "用一句话总结这张照片的整体感觉（10字以内）"
 }`
+}
 
 app.post('/api/analyze', async (req, res) => {
-  const { imageBase64, imageUrl, mediaType, exif, hasPortrait, mode, userContext } = req.body
+  const { imageBase64, imageUrl, mediaType, exif, hasPortrait, mode, userContext, lang = 'zh' } = req.body
 
   if (!imageBase64 && !imageUrl) {
     return res.status(400).json({ error: '缺少图片数据' })
@@ -293,8 +392,8 @@ app.post('/api/analyze', async (req, res) => {
     : { type: 'base64', media_type: mediaType || 'image/jpeg', data: imageBase64 }
 
   const prompt = mode === 'gallery'
-    ? GALLERY_PROMPT(buildExifText(exif))
-    : ANALYZE_PROMPT(buildExifText(exif), hasPortrait, userContext)
+    ? GALLERY_PROMPT(buildExifText(exif, lang), lang)
+    : ANALYZE_PROMPT(buildExifText(exif, lang), hasPortrait, userContext, lang)
 
   try {
     const message = await client.messages.create({
@@ -364,7 +463,7 @@ app.post('/api/analyze', async (req, res) => {
 
 // --- AI chat endpoint ---
 app.post('/api/chat', async (req, res) => {
-  const { messages, imageBase64, imageUrl, mediaType, exif, analysis } = req.body
+  const { messages, imageBase64, imageUrl, mediaType, exif, analysis, lang = 'zh' } = req.body
   if (!messages || !Array.isArray(messages)) {
     return res.status(400).json({ error: '缺少对话内容' })
   }
@@ -375,17 +474,38 @@ app.post('/api/chat', async (req, res) => {
       ? { type: 'base64', media_type: mediaType || 'image/jpeg', data: imageBase64 }
       : null
 
-  const exifText = buildExifText(exif)
-  const analysisContext = analysis ? `
+  const exifText = buildExifText(exif, lang)
+  const analysisContext = analysis
+    ? lang === 'en'
+      ? `
+Previous AI analysis:
+- Settings: ${analysis.paramExplanation || ''}
+- Manual mode tips: ${analysis.manualModeTip || ''}
+- Lighting analysis: ${analysis.intentAnalysis || ''}
+- Improvement suggestions: ${analysis.improvement || ''}
+- Lens advice: ${analysis.lensTip || ''}
+- Overall feel: ${analysis.overallFeel || ''}`.trim()
+      : `
 已有的 AI 初步解读：
 - 参数解释：${analysis.paramExplanation || ''}
 - 手动模式建议：${analysis.manualModeTip || ''}
 - 用光分析：${analysis.intentAnalysis || ''}
 - 改进建议：${analysis.improvement || ''}
 - 镜头建议：${analysis.lensTip || ''}
-- 整体感受：${analysis.overallFeel || ''}`.trim() : ''
+- 整体感受：${analysis.overallFeel || ''}`.trim()
+    : ''
 
-  const systemPrompt = `你是「追光 Lumen」的 AI 摄影导师，正在和一位摄影初学者进行对话。
+  const systemPrompt = lang === 'en'
+    ? `You are Lumen's AI photography mentor, chatting with a beginner photographer.
+
+Photo context:
+${exifText}
+${analysisContext}
+
+User background: photography beginner, mostly uses auto mode, learning manual mode, has a 35mm f/2 prime lens, interested in natural light portraits.
+
+Answer the user's questions based on the photo context above. Tone: friendly, conversational, encouraging — like a photographer friend chatting. Keep answers concise, 2-5 sentences is ideal; slightly longer for specific technical questions. Reply in English.`
+    : `你是「追光 Lumen」的 AI 摄影导师，正在和一位摄影初学者进行对话。
 
 关于这张照片的背景信息：
 ${exifText}

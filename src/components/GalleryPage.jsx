@@ -3,7 +3,7 @@ import { galleryItems } from '../data/gallery'
 import { useLang } from '../contexts/LangContext'
 
 export default function GalleryPage() {
-  const { t } = useLang()
+  const { t, lang } = useLang()
   const [activeCategory, setActiveCategory] = useState('featured')
   const [photos, setPhotos] = useState([])
   const [page, setPage] = useState(1)
@@ -67,6 +67,7 @@ export default function GalleryPage() {
         isFeatured={activeCategory === 'featured'}
         onBack={() => setSelected(null)}
         t={t}
+        lang={lang}
       />
     )
   }
@@ -249,7 +250,7 @@ function setCachedAnalysis(id, data) {
 }
 
 // ---- Detail view with on-demand AI analysis ----
-function DetailView({ photo, isFeatured, onBack, t }) {
+function DetailView({ photo, isFeatured, onBack, t, lang }) {
   const [analysis, setAnalysis] = useState(() => getCachedAnalysis(photo.id))
   const [analyzing, setAnalyzing] = useState(false)
   const [analyzeError, setAnalyzeError] = useState(null)
@@ -261,7 +262,7 @@ function DetailView({ photo, isFeatured, onBack, t }) {
       const res = await fetch('/api/analyze', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ imageUrl: photo.full, exif: photo.exif, mode: 'gallery' }),
+        body: JSON.stringify({ imageUrl: photo.full, exif: photo.exif, mode: 'gallery', lang }),
       })
       const data = await res.json()
       if (!res.ok) throw new Error(data.error || t('gallery.ai.analyzing'))

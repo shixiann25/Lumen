@@ -1,6 +1,8 @@
 import { useState, useRef, useEffect } from 'react'
+import { useLang } from '../contexts/LangContext'
 
 export default function PhotoChat({ imageBase64, imageUrl, mediaType, exif, analysis }) {
+  const { lang, t } = useLang()
   const [messages, setMessages] = useState([])
   const [input, setInput] = useState('')
   const [loading, setLoading] = useState(false)
@@ -35,6 +37,7 @@ export default function PhotoChat({ imageBase64, imageUrl, mediaType, exif, anal
           mediaType,
           exif,
           analysis,
+          lang,
         }),
       })
       const data = await res.json()
@@ -52,12 +55,19 @@ export default function PhotoChat({ imageBase64, imageUrl, mediaType, exif, anal
     if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); send() }
   }
 
-  const SUGGESTED = [
-    '为什么背景虚化不够？',
-    '这张照片怎么调整白平衡？',
-    '如果换成手动模式怎么设置？',
-    '自然光哪个方向最好看？',
-  ]
+  const SUGGESTED = lang === 'en'
+    ? [
+        'Why isn\'t the background blurry enough?',
+        'How to adjust white balance for this shot?',
+        'How would I set this up in manual mode?',
+        'Which direction of natural light works best?',
+      ]
+    : [
+        '为什么背景虚化不够？',
+        '这张照片怎么调整白平衡？',
+        '如果换成手动模式怎么设置？',
+        '自然光哪个方向最好看？',
+      ]
 
   return (
     <div className="mt-8 border border-[#E5DED5] rounded-2xl overflow-hidden bg-white">
@@ -67,8 +77,8 @@ export default function PhotoChat({ imageBase64, imageUrl, mediaType, exif, anal
           <span className="text-white text-xs">◎</span>
         </div>
         <div>
-          <p className="text-sm font-semibold text-[#1A1714]">继续问 AI</p>
-          <p className="text-xs text-[#A89C91]">针对这张照片，随时提问</p>
+          <p className="text-sm font-semibold text-[#1A1714]">{lang === 'en' ? 'Ask AI' : '继续问 AI'}</p>
+          <p className="text-xs text-[#A89C91]">{lang === 'en' ? 'Ask anything about this photo' : '针对这张照片，随时提问'}</p>
         </div>
       </div>
 
@@ -77,7 +87,7 @@ export default function PhotoChat({ imageBase64, imageUrl, mediaType, exif, anal
         {/* Empty state — suggested questions */}
         {messages.length === 0 && (
           <div>
-            <p className="text-xs text-[#A89C91] mb-3">你可以问我：</p>
+            <p className="text-xs text-[#A89C91] mb-3">{lang === 'en' ? 'You can ask me:' : '你可以问我：'}</p>
             <div className="flex flex-wrap gap-2">
               {SUGGESTED.map((q) => (
                 <button
@@ -144,7 +154,7 @@ export default function PhotoChat({ imageBase64, imageUrl, mediaType, exif, anal
           value={input}
           onChange={(e) => setInput(e.target.value)}
           onKeyDown={handleKey}
-          placeholder="问关于这张照片的任何问题…"
+          placeholder={lang === 'en' ? 'Ask anything about this photo…' : '问关于这张照片的任何问题…'}
           className="flex-1 resize-none bg-[#F8F6F2] rounded-xl px-4 py-2.5 text-sm text-[#1A1714] placeholder-[#C4B9B0] outline-none border border-[#E5DED5] focus:border-[#B8965A] transition-colors"
           style={{ maxHeight: '120px' }}
           onInput={(e) => {
@@ -157,7 +167,7 @@ export default function PhotoChat({ imageBase64, imageUrl, mediaType, exif, anal
           disabled={!input.trim() || loading}
           className="px-4 py-2.5 rounded-xl bg-[#1A1714] text-white text-sm font-medium hover:bg-[#B8965A] transition-colors disabled:opacity-30 disabled:cursor-not-allowed flex-shrink-0"
         >
-          发送
+          {lang === 'en' ? 'Send' : '发送'}
         </button>
       </div>
     </div>
