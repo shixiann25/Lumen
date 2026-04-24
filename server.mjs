@@ -28,7 +28,7 @@ if (isProd) {
   app.use(express.static(distPath))
 }
 
-const client = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY })
+const client = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY, timeout: 80000 })
 
 // --- EXIF simulation for gallery photos ---
 const EXIF_PRESETS = {

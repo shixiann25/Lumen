@@ -112,6 +112,8 @@ export default function UploadPage({ addRecord }) {
     } catch { /* continue without EXIF */ }
 
     setState(STATES.ANALYZING)
+    const controller = new AbortController()
+    const timeoutId = setTimeout(() => controller.abort('timeout'), 90000) // 90s timeout
     try {
       const { base64, mediaType: compressedType } = await compressToBase64(file, 4.5)
       setImageBase64(base64)
@@ -119,6 +121,7 @@ export default function UploadPage({ addRecord }) {
       const res = await fetch('/api/analyze', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
+        signal: controller.signal,
         body: JSON.stringify({
           imageBase64: base64,
           mediaType: compressedType,
@@ -127,6 +130,7 @@ export default function UploadPage({ addRecord }) {
           lang,
         }),
       })
+      clearTimeout(timeoutId)
       if (!res.ok) {
         const err = await res.json().catch(() => ({}))
         throw new Error(err.error || `请求失败 (${res.status})`)
@@ -144,7 +148,20 @@ export default function UploadPage({ addRecord }) {
         })
       }
     } catch (err) {
-      setError(err.message)
+      clearTimeout(timeoutId)
+      // Translate browser-level errors into user-friendly messages
+      let msg = err.message
+      if (err.name === 'AbortError' || err.message?.includes('abort') || err.message?.includes('timeout')) {
+        msg = t('upload.error.timeout')
+      } else if (
+        err.message === 'Load failed' ||
+        err.message === 'Failed to fetch' ||
+        err.message?.includes('NetworkError') ||
+        err.message?.includes('network')
+      ) {
+        msg = t('upload.error.network')
+      }
+      setError(msg)
       setState(STATES.ERROR)
     }
   }, [device, focusAreas, focusNote])
